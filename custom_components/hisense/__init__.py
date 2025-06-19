@@ -21,15 +21,9 @@ async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.Conf
             session=session
         )
 
-        for platform in ("climate", "switch", "button"):
-            hass.async_create_task(
-                hass.config_entries.async_forward_entry_setup(entry, platform)
-            )
-
+    # Load platforms
+    await hass.config_entries.async_forward_entry_setups(entry, ["climate", "switch", "button"])
     return True
 
 async def async_unload_entry(hass: core.HomeAssistant, entry: config_entries.ConfigEntry):
-    return all(
-        await hass.config_entries.async_forward_entry_unload(entry, platform)
-        for platform in ("climate", "switch", "button")
-    )
+    return await hass.config_entries.async_unload_platforms(entry, ["climate", "switch", "button"])
