@@ -51,7 +51,7 @@ class HiSenseLogin:
 
     async def get_home_id_list(self, access_token):
         timestamp = self.get_timestamp()
-        url='http://api.wg.hismarttv.com/wg/dm/getHomeList'
+        url='https://api-wg.hismarttv.com/wg/dm/getHomeList'
         
         headers = {
                 'Host': 'api.wg.hismarttv.com',
@@ -82,7 +82,7 @@ class HiSenseLogin:
             
     async def get_device_wifi_id_dict(self, access_token, home_id, device_keywords="空调"):
         timestamp = self.get_timestamp()
-        url='http://api-wg.hismarttv.com/wg/dm/getHomeDeviceList'
+        url='https://api-wg.hismarttv.com/wg/dm/getHomeDeviceList'
         headers = {
                 'Host': 'api-wg.hismarttv.com',
                 'Connection': 'Keep-Alive',
