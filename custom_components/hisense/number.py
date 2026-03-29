@@ -4,13 +4,13 @@ from homeassistant.core import callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.helpers.entity import EntityCategory
 
-from .const import DOMAIN, climate_limits_signal
+from .const import DOMAIN, climate_limits_signal, device_suggested_object_id
 
 CLIMATE_LIMIT_DESCRIPTIONS: tuple[NumberEntityDescription, ...] = (
     NumberEntityDescription(
         key="climate_min_temp",
         translation_key="climate_min_temp",
-        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_category=EntityCategory.CONFIG,
         native_min_value=0,
         native_max_value=100,
         native_step=1,
@@ -20,7 +20,7 @@ CLIMATE_LIMIT_DESCRIPTIONS: tuple[NumberEntityDescription, ...] = (
     NumberEntityDescription(
         key="climate_max_temp",
         translation_key="climate_max_temp",
-        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_category=EntityCategory.CONFIG,
         native_min_value=0,
         native_max_value=100,
         native_step=1,
@@ -41,7 +41,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 
 class HisenseClimateLimitNumber(NumberEntity):
-    """Diagnostic slider for climate min or max temperature bound (0–100 °C)."""
+    """Configuration slider for climate min or max temperature bound (0–100 °C)."""
 
     entity_description: NumberEntityDescription
     _attr_has_entity_name = True
@@ -51,6 +51,9 @@ class HisenseClimateLimitNumber(NumberEntity):
         self.entity_description = description
         self._is_min = is_min
         self._attr_unique_id = f"{api.device_id}_{description.key}"
+        self._attr_suggested_object_id = device_suggested_object_id(
+            api.device_id, description.key
+        )
 
     @property
     def device_info(self):

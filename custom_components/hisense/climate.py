@@ -19,7 +19,7 @@ from homeassistant.components.climate.const import (
 from homeassistant.const import UnitOfTemperature, ATTR_TEMPERATURE
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from .const import DOMAIN, climate_limits_signal
+from .const import DOMAIN, climate_limits_signal, device_suggested_object_id
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,6 +36,9 @@ class HisenseACClimate(ClimateEntity):
         self._config_entry_id = config_entry_id
         self._attr_name = f"Hisense AC"
         self._attr_unique_id = f"{api.device_id}_climate"
+        self._attr_suggested_object_id = device_suggested_object_id(
+            api.device_id, "climate"
+        )
         self._attr_supported_features = (
             ClimateEntityFeature.TURN_ON |
             ClimateEntityFeature.TURN_OFF |

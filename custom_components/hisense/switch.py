@@ -1,7 +1,7 @@
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.core import HomeAssistant
-from .const import DOMAIN
+from .const import DOMAIN, device_suggested_object_id
 import logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -19,6 +19,9 @@ class AcScreenSwitch(SwitchEntity):
     def __init__(self, api):
         self._api = api
         self._attr_unique_id = f"{api.device_id}_screen"
+        self._attr_suggested_object_id = device_suggested_object_id(
+            api.device_id, "screen"
+        )
         self._is_on = True
         self._attr_icon = "mdi:clock-digital"
 
@@ -61,6 +64,9 @@ class AuxHeatSwitch(SwitchEntity):
     def __init__(self, api):
         self._api = api
         self._attr_unique_id = f"{api.device_id}_aux_heat"
+        self._attr_suggested_object_id = device_suggested_object_id(
+            api.device_id, "aux_heat"
+        )
         self._is_on = False
         self._attr_icon = "mdi:heating-coil"
 

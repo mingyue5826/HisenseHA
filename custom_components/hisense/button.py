@@ -1,7 +1,7 @@
 from homeassistant.components.button import ButtonEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.core import HomeAssistant
-from .const import DOMAIN
+from .const import DOMAIN, device_suggested_object_id
 from homeassistant.const import EntityCategory
 import logging
 
@@ -23,11 +23,11 @@ class HisenseACUpdateButton(ButtonEntity):
         self._config_entry_id = config_entry_id
         self._attr_name = f"Force update button"
         self._attr_unique_id = f"{api.device_id}_force_update_button"
+        self._attr_suggested_object_id = device_suggested_object_id(
+            api.device_id, "force_update"
+        )
         self._attr_icon = "mdi:refresh"
-
-    @property
-    def entity_category(self):
-        return EntityCategory.CONFIG
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def device_info(self):
@@ -54,11 +54,11 @@ class HisenseACRefreshTokenButton(ButtonEntity):
         self._config_entry_id = config_entry_id
         self._attr_name = f"Refresh token"
         self._attr_unique_id = f"{api.device_id}_refresh_token"
+        self._attr_suggested_object_id = device_suggested_object_id(
+            api.device_id, "refresh_token"
+        )
         self._attr_icon = "mdi:refresh"
-
-    @property
-    def entity_category(self):
-        return EntityCategory.CONFIG
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def device_info(self):
