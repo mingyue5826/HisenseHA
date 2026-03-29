@@ -18,10 +18,12 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 
 class HisenseACUpdateButton(ButtonEntity):
+    _attr_has_entity_name = True
+    _attr_translation_key = "force_update"
+
     def __init__(self, api, config_entry_id):
         self._api = api
         self._config_entry_id = config_entry_id
-        self._attr_name = f"Force update button"
         self._attr_unique_id = f"{api.device_id}_force_update_button"
         self._attr_suggested_object_id = device_suggested_object_id(
             api.device_id, "force_update"
@@ -34,12 +36,9 @@ class HisenseACUpdateButton(ButtonEntity):
         return {
             "identifiers": {(DOMAIN, self._api.device_id)},
             "name": "Hisense AC",
+            "translation_key": "hisense_ac",
             "manufacturer": "Hisense",
         }
-
-    @property
-    def name(self):
-        return "Force Update"
 
     async def async_press(self):
         """Handle the button press."""
@@ -49,10 +48,12 @@ class HisenseACUpdateButton(ButtonEntity):
 
 
 class HisenseACRefreshTokenButton(ButtonEntity):
+    _attr_has_entity_name = True
+    _attr_translation_key = "refresh_token"
+
     def __init__(self, api, config_entry_id):
         self._api = api
         self._config_entry_id = config_entry_id
-        self._attr_name = f"Refresh token"
         self._attr_unique_id = f"{api.device_id}_refresh_token"
         self._attr_suggested_object_id = device_suggested_object_id(
             api.device_id, "refresh_token"
@@ -65,12 +66,9 @@ class HisenseACRefreshTokenButton(ButtonEntity):
         return {
             "identifiers": {(DOMAIN, self._api.device_id)},
             "name": "Hisense AC",
+            "translation_key": "hisense_ac",
             "manufacturer": "Hisense",
         }
-
-    @property
-    def name(self):
-        return "Refresh token"
 
     async def async_press(self):
         """Handle the button press."""

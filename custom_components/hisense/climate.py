@@ -31,10 +31,12 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 
 class HisenseACClimate(ClimateEntity):
+    _attr_has_entity_name = True
+    _attr_translation_key = "thermostat"
+
     def __init__(self, api, config_entry_id):
         self._api = api
         self._config_entry_id = config_entry_id
-        self._attr_name = f"Hisense AC"
         self._attr_unique_id = f"{api.device_id}_climate"
         self._attr_suggested_object_id = device_suggested_object_id(
             api.device_id, "climate"
@@ -106,6 +108,7 @@ class HisenseACClimate(ClimateEntity):
         return {
             "identifiers": {(DOMAIN, self._api.device_id)},
             "name": "Hisense AC",
+            "translation_key": "hisense_ac",
             "manufacturer": "Hisense",
         }
 

@@ -11,7 +11,7 @@
       },
       "home": {
         "title": "HiSense Smart Device",
-        "description": "Select your home ID"
+        "description": "Select your home"
       },
       "device": {
         "title": "HiSense Smart Device",
@@ -25,7 +25,33 @@
     },
     "title": "Hisense AC"
   },
+  "device": {
+    "hisense_ac": {
+      "name": "Hisense AC"
+    }
+  },
   "entity": {
+    "climate": {
+      "thermostat": {
+        "name": "Climate"
+      }
+    },
+    "switch": {
+      "screen_panel": {
+        "name": "Screen panel"
+      },
+      "auxiliary_heat": {
+        "name": "Auxiliary heat"
+      }
+    },
+    "button": {
+      "force_update": {
+        "name": "Force refresh"
+      },
+      "refresh_token": {
+        "name": "Refresh token"
+      }
+    },
     "number": {
       "climate_min_temp": {
         "name": "Thermostat min temperature"

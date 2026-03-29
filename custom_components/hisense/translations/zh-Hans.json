@@ -11,11 +11,11 @@
       },
       "home": {
         "title": "海信智能设备",
-        "description": "选择海信App中的家庭ID(单选)"
+        "description": "选择家庭"
       },
       "device": {
         "title": "海信智能设备",
-        "description": "选择需要添加的设备(可多选)"
+        "description": "选择需要添加的设备（可多选）"
       }
     },
     "error": {
@@ -25,7 +25,33 @@
     },
     "title": "海信空调"
   },
+  "device": {
+    "hisense_ac": {
+      "name": "海信空调"
+    }
+  },
   "entity": {
+    "climate": {
+      "thermostat": {
+        "name": "空调"
+      }
+    },
+    "switch": {
+      "screen_panel": {
+        "name": "显示屏"
+      },
+      "auxiliary_heat": {
+        "name": "电辅热"
+      }
+    },
+    "button": {
+      "force_update": {
+        "name": "刷新状态"
+      },
+      "refresh_token": {
+        "name": "刷新令牌"
+      }
+    },
     "number": {
       "climate_min_temp": {
         "name": "最低温度"
@@ -36,4 +62,3 @@
     }
   }
 }
-  

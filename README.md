@@ -1,17 +1,48 @@
-# HisenseHA
-Home Assistant integration for Hisense smart device
+# Hisense Smart Devices (HisenseHA)
 
-Only support AC currently.
+[简体中文](README_zh-Hans.md)
 
-## Release
-### V1.3.2
-* Use https, see this [PR](https://github.com/manymuch/HisenseHA/pull/8)
+Home Assistant custom integration for **Hisense** cloud-connected smart devices. Only **Air conditioners (AC)** are supported. If you want support for more device types, **pull requests** are welcome.
 
-### V1.3.1
-* Upgrade to Home Assistant 2025.6.1
+## Requirements
 
-### V1.3.0
-* Support multiple AC
+- **Home Assistant** 2025.6 or newer (for older cores, see [releases](https://github.com/manymuch/HisenseHA/releases)).
+- A **Hisense account** that can sign in to the official mobile app (same username and password).
+- The AC must already be paired in the app and belong to a **home**.
 
-### V1.2.0
-* Support login via username and password
+## Install the integration
+
+### Option A: HACS
+
+1. Open **HACS** in Home Assistant.
+2. Go to **Integrations** → menu (⋮) → **Custom repositories**.
+3. Add repository `https://github.com/manymuch/HisenseHA`, category **Integration**.
+4. On the **Hisense Smart Devices** card, click **Download**.
+5. **Restart** Home Assistant when prompted.
+
+### Option B: Manual install
+
+1. Download a release archive from [Releases](https://github.com/manymuch/HisenseHA/releases), extract it, and copy the contents into your Home Assistant configuration directory:
+
+   `config/custom_components/hisense/`
+
+2. **Restart** Home Assistant.
+
+## Add devices
+
+1. Go to **Settings** → **Devices & services** → **Add integration**.
+2. Search for **Hisense Smart Devices** (or **Hisense**) and select it.
+3. Enter your **Hisense app username and password** (wrong credentials will show an authentication error).
+4. Choose the **home** that contains your AC.
+5. Select one or more **devices**, then finish the wizard.
+
+## Status sync
+
+This integration talks to the **Hisense cloud**. Device state in the UI **updates mainly after you act on an entity** (for example changing temperature, power, or mode); it does **not** continuously poll full device state on a fixed interval in the background.
+
+Each device exposes two **Diagnostic** buttons (names follow your UI language; in English they are **Refresh token** and **Force refresh**):
+
+- **Refresh token**: Exchanges the refresh token with Hisense servers for a new access token. Tokens usually last months and are renewed automatically. This control is mainly for **developer debugging**; **do not** press it unless for you know exactly what to do.
+- **Force refresh**: Requests the **current state once** from the Hisense cloud. Each press causes a **real cloud request**. **Do not** automate it as “poll every few seconds or minutes,” or you may hit rate limits or get the API endpoint blocked entirely.
+
+If you need **real-time status update**, we recommend pairing the same Hisense device with **Mi Home** as well, then in Home Assistant use [Xiaomi Miot](https://github.com/al-one/hass-xiaomi-miot) or [Xiaomi Home](https://github.com/xiaomi/ha_xiaomi_home) to observe Mi Home state changes, and an **automation** that triggers this integration’s **Force refresh** button for the matching device when the Xiaomi entity changes, to sync Hisense entities indirectly.

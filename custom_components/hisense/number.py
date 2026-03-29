@@ -60,6 +60,7 @@ class HisenseClimateLimitNumber(NumberEntity):
         return {
             "identifiers": {(DOMAIN, self._api.device_id)},
             "name": "Hisense AC",
+            "translation_key": "hisense_ac",
             "manufacturer": "Hisense",
         }
 

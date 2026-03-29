@@ -16,6 +16,9 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 
 class AcScreenSwitch(SwitchEntity):
+    _attr_has_entity_name = True
+    _attr_translation_key = "screen_panel"
+
     def __init__(self, api):
         self._api = api
         self._attr_unique_id = f"{api.device_id}_screen"
@@ -30,12 +33,9 @@ class AcScreenSwitch(SwitchEntity):
         return {
             "identifiers": {(DOMAIN, self._api.device_id)},
             "name": "Hisense AC",
+            "translation_key": "hisense_ac",
             "manufacturer": "Hisense",
         }
-
-    @property
-    def name(self):
-        return "Screen Panel"
 
     @property
     def is_on(self):
@@ -61,6 +61,9 @@ class AcScreenSwitch(SwitchEntity):
 
 
 class AuxHeatSwitch(SwitchEntity):
+    _attr_has_entity_name = True
+    _attr_translation_key = "auxiliary_heat"
+
     def __init__(self, api):
         self._api = api
         self._attr_unique_id = f"{api.device_id}_aux_heat"
@@ -75,12 +78,9 @@ class AuxHeatSwitch(SwitchEntity):
         return {
             "identifiers": {(DOMAIN, self._api.device_id)},
             "name": "Hisense AC",
+            "translation_key": "hisense_ac",
             "manufacturer": "Hisense",
         }
-
-    @property
-    def name(self):
-        return "Aux Heat"
 
     @property
     def is_on(self):
