@@ -1,7 +1,23 @@
+from collections import Counter
 from copy import deepcopy
 import time
 import logging
 _LOGGER = logging.getLogger(__name__)
+
+
+def _device_select_label(device: dict, device_id: str) -> str:
+    room = (device.get("roomName") or "").strip()
+    nick = (device.get("deviceNickName") or "").strip()
+    if room and nick:
+        return f"{room}-{nick}"
+    if room:
+        return room
+    if nick:
+        return nick
+    device_name = (device.get("deviceName") or "").strip()
+    if device_name:
+        return device_name
+    return device_id
 
 
 class HiSenseLogin:
@@ -49,7 +65,8 @@ class HiSenseLogin:
             else:
                 return None
 
-    async def get_home_id_list(self, access_token):
+    async def get_home_select_options(self, access_token):
+        """Return mapping home_id -> display name for config flow UI."""
         timestamp = self.get_timestamp()
         url='https://api-wg.hismarttv.com/wg/dm/getHomeList'
         
@@ -73,14 +90,19 @@ class HiSenseLogin:
             result_code = result["response"]["resultCode"]
             if result_code == 0:
                 home_list = result["response"]["homeList"]
-                home_id_list = []
+                options = {}
                 for home in home_list:
-                    home_id_list.append(home["homeId"])
-                return home_id_list
+                    hid = home["homeId"]
+                    name = (home.get("homeName") or "").strip()
+                    options[hid] = name if name else hid
+                return options
             else:
                 return None
-            
-    async def get_device_wifi_id_dict(self, access_token, home_id, device_keywords="空调"):
+
+    async def get_device_wifi_id_and_labels(
+        self, access_token, home_id, device_keywords="空调"
+    ):
+        """Return (device_id -> wifi_id, device_id -> UI label) for filtered devices."""
         timestamp = self.get_timestamp()
         url='https://api-wg.hismarttv.com/wg/dm/getHomeDeviceList'
         headers = {
@@ -104,12 +126,23 @@ class HiSenseLogin:
             result_code = result["response"]["resultCode"]
             if result_code == 0:
                 device_list = result["response"]["deviceList"]
-                device_wifi_id_dict = dict()
+                device_wifi_id_dict = {}
+                raw_labels = {}
                 for device in device_list:
                     device_type_name = device["deviceTypeName"]
                     if device_keywords in device_type_name:
-                        device_wifi_id_dict[device["deviceId"]] = device["wifiId"]
-                return device_wifi_id_dict
+                        did = device["deviceId"]
+                        device_wifi_id_dict[did] = device["wifiId"]
+                        raw_labels[did] = _device_select_label(device, did)
+                label_counts = Counter(raw_labels.values())
+                device_id_to_label = {}
+                for did, base in raw_labels.items():
+                    if label_counts[base] > 1:
+                        suffix = did[-6:] if len(did) >= 6 else did
+                        device_id_to_label[did] = f"{base} ({suffix})"
+                    else:
+                        device_id_to_label[did] = base
+                return device_wifi_id_dict, device_id_to_label
             else:
                 return None
 

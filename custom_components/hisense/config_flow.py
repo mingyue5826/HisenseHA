@@ -10,9 +10,11 @@ class HisenseACConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
     def __init__(self):
-        self._home_id_list = None
+        self._home_options = None
         self._access_token = None
         self._refresh_token = None
+        self._device_wifi_id_dict = None
+        self._device_id_to_label = None
 
     async def async_step_user(self, user_input=None):
         errors = {}
@@ -25,7 +27,9 @@ class HisenseACConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 access_token, refresh_token = await hisense_login.login(
                     user_input[CONF_USERNAME], user_input[CONF_PASSWORD]
                 )
-                self._home_id_list = await hisense_login.get_home_id_list(access_token)
+                self._home_options = await hisense_login.get_home_select_options(
+                    access_token
+                )
                 self._access_token = access_token
                 self._refresh_token = refresh_token
                 return await self.async_step_home()
@@ -54,16 +58,17 @@ class HisenseACConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             home_id = user_input["home_id"]
             session = async_get_clientsession(self.hass)
             hisense_login = HiSenseLogin(session=session)
-            self._device_wifi_id_dict = await hisense_login.get_device_wifi_id_dict(
+            pair = await hisense_login.get_device_wifi_id_and_labels(
                 self._access_token, home_id
             )
+            self._device_wifi_id_dict, self._device_id_to_label = pair
 
             return await self.async_step_device()
 
         return self.async_show_form(
             step_id="home",
             data_schema=vol.Schema(
-                {vol.Required("home_id"): vol.In(self._home_id_list)}
+                {vol.Required("home_id"): vol.In(self._home_options)}
             ),
             errors=errors,
         )
@@ -85,9 +90,7 @@ class HisenseACConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         data_schema = vol.Schema(
             {
-                vol.Required("device_ids"): cv.multi_select(
-                    list(self._device_wifi_id_dict.keys())
-                ),
+                vol.Required("device_ids"): cv.multi_select(self._device_id_to_label),
             }
         )
         return self.async_show_form(step_id="device", data_schema=data_schema)
