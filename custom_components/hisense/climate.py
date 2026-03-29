@@ -1,5 +1,7 @@
 import asyncio
 import logging
+
+from homeassistant.core import callback
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
     ClimateEntityFeature,
@@ -15,7 +17,9 @@ from homeassistant.components.climate.const import (
     SWING_VERTICAL
 )
 from homeassistant.const import UnitOfTemperature, ATTR_TEMPERATURE
-from .const import DOMAIN
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
+
+from .const import DOMAIN, climate_limits_signal
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,8 +54,6 @@ class HisenseACClimate(ClimateEntity):
         self._attr_temperature_unit = UnitOfTemperature.CELSIUS
         self._attr_target_temperature = None
         self._attr_current_temperature = None
-        self._attr_min_temp = 16
-        self._attr_max_temp = 32
         self._attr_is_on = False
         self._attr_hvac_mode = None
         self._attr_fan_mode = None
@@ -103,6 +105,28 @@ class HisenseACClimate(ClimateEntity):
             "name": "Hisense AC",
             "manufacturer": "Hisense",
         }
+
+    @property
+    def min_temp(self):
+        return float(self._api.climate_min_temp)
+
+    @property
+    def max_temp(self):
+        return float(self._api.climate_max_temp)
+
+    async def async_added_to_hass(self):
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                climate_limits_signal(self._api.device_id),
+                self._handle_climate_limits_updated,
+            )
+        )
+
+    @callback
+    def _handle_climate_limits_updated(self, *_args):
+        self.async_write_ha_state()
 
     async def async_update(self):
         status = self._api.get_status()

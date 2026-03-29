@@ -184,6 +184,8 @@ class HiSenseAC:
             3: "MEDIUM",
             4: "HIGH",
         }
+        self.climate_min_temp = 16
+        self.climate_max_temp = 32
 
     async def _send_command(self, url, command_data):
         post_url = f"{url}{self.access_token}"

@@ -22,8 +22,12 @@ async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.Conf
         )
 
     # Load platforms
-    await hass.config_entries.async_forward_entry_setups(entry, ["climate", "switch", "button"])
+    await hass.config_entries.async_forward_entry_setups(
+        entry, ["climate", "switch", "button", "number"]
+    )
     return True
 
 async def async_unload_entry(hass: core.HomeAssistant, entry: config_entries.ConfigEntry):
-    return await hass.config_entries.async_unload_platforms(entry, ["climate", "switch", "button"])
+    return await hass.config_entries.async_unload_platforms(
+        entry, ["climate", "switch", "button", "number"]
+    )

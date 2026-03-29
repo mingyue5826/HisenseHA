@@ -24,5 +24,15 @@
       "unknown": "An unknown error occurred"
     },
     "title": "Hisense AC"
+  },
+  "entity": {
+    "number": {
+      "climate_min_temp": {
+        "name": "Thermostat min temperature"
+      },
+      "climate_max_temp": {
+        "name": "Thermostat max temperature"
+      }
+    }
   }
 }

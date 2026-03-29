@@ -24,6 +24,16 @@
       "unknown": "发生未知错误"
     },
     "title": "海信空调"
+  },
+  "entity": {
+    "number": {
+      "climate_min_temp": {
+        "name": "最低温度"
+      },
+      "climate_max_temp": {
+        "name": "最高温度"
+      }
+    }
   }
 }
   
