@@ -1,4 +1,5 @@
 # 海信智能家居（HisenseHA）
+![Hisense](hisense-electronics.png)
 
 [English](README.md)
 

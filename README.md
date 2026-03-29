@@ -1,4 +1,6 @@
 # Hisense Smart Devices (HisenseHA)
+![Hisense](hisense-electronics.png)
+
 
 [简体中文](README_zh-Hans.md)
 
