@@ -21,6 +21,8 @@
     "error": {
       "cannot_connect": "Unable to connect to the device",
       "invalid_auth": "Failed to login",
+      "no_devices": "No supported Hisense AC devices were found",
+      "no_homes": "No homes were found for this account",
       "unknown": "An unknown error occurred"
     },
     "title": "Hisense AC"

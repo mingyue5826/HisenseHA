@@ -4,6 +4,9 @@ import time
 import logging
 _LOGGER = logging.getLogger(__name__)
 
+_STATUS_SWING_MODES = {0, 1, 2, 3}
+_MIN_STATUS_VALUES = 210
+
 
 def _device_select_label(device: dict, device_id: str) -> str:
     room = (device.get("roomName") or "").strip()
@@ -220,72 +223,150 @@ class HiSenseAC:
         self.climate_min_temp = 16
         self.climate_max_temp = 32
 
-    async def _send_command(self, url, command_data):
+    async def _send_command(self, url, command_data, status_required=True):
         post_url = f"{url}{self.access_token}"
-        async with self.session.post(post_url, headers=self.headers, json=command_data) as response:
-            result = await response.json()
-            result_code = result["response"]["resultCode"]
-            if result_code == 0:
-                self.__update(result)
-                return True
-            else:
-                return False
-
-    async def _robust_send_command(self, url, command_data):
-        if not await self._send_command(url, command_data):
-            _LOGGER.info("Attempting to refresh token and retry command")
-            if await self.refresh():
-                return await self._send_command(url, command_data)
-            else:
-                _LOGGER.error("Failed to refresh token")
-                return False
-
-    def __update(self, result):
         try:
-            result_list_str = result["response"]["preStatus"]
-        except KeyError:
-            try:
-                result_list_str = result["response"]["deviceStatusList"][0]["deviceStatus"]
+            async with self.session.post(
+                post_url,
+                headers=self.headers,
+                json=command_data,
+            ) as response:
+                result = await response.json()
+        except Exception:
+            _LOGGER.error("Hisense request failed", exc_info=True)
+            return False
 
-            except KeyError:
-                return False
-        result_list = [int(i) for i in result_list_str.split(',')]
-        self.status["desired_temperature"] = result_list[9]
-        self.status["indoor_temperature"] = result_list[10]
-        self.status["hvac_mode_id"] = result_list[4]
-        self.status["hvac_mode"] = self.hvac_mode_lookup[self.status["hvac_mode_id"]]
-        self.status["fan_mode_id"] = result_list[0]
-        self.status["fan_mode"] = self.fan_mode_lookup[self.status["fan_mode_id"]]
-        self.status["screen_on"] = result_list[58] == 1
-        self.status["power_on"] = result_list[5] == 1
-        self.status["aux_heat"] = result_list[45] == 1
-        self.status["nature_wind"] = result_list[44] == 1
-        self.status["swing_mode_id"] = result_list[209]
+        response_obj = result.get("response")
+        if not isinstance(response_obj, dict):
+            _LOGGER.error("Hisense response missing response object: %s", result)
+            return False
+
+        result_code = response_obj.get("resultCode")
+        if result_code != 0:
+            _LOGGER.warning("Hisense request failed with resultCode=%s", result_code)
+            return False
+
+        if not status_required:
+            try:
+                self._extract_status_payload(result)
+            except ValueError:
+                _LOGGER.debug("Hisense response accepted without status payload")
+                return None
+
+        if self._update_status_from_result(result):
+            return True
+
+        if not status_required:
+            return None
+
+        _LOGGER.error("Hisense response did not include a usable status payload")
+        return False
+
+    async def _robust_send_command(self, url, command_data, status_required=True):
+        result = await self._send_command(url, command_data, status_required)
+        if result is not False:
+            return result
+        _LOGGER.info("Attempting to refresh token and retry command")
+        if not await self.refresh():
+            _LOGGER.error("Failed to refresh token")
+            return False
+        return await self._send_command(url, command_data, status_required)
+
+    def _extract_status_payload(self, result):
+        response = result.get("response")
+        if not isinstance(response, dict):
+            raise ValueError("missing response object")
+
+        pre_status = response.get("preStatus")
+        if isinstance(pre_status, str) and pre_status:
+            return pre_status
+
+        status_list = response.get("deviceStatusList")
+        if isinstance(status_list, list) and status_list:
+            first_status = status_list[0]
+            if isinstance(first_status, dict):
+                device_status = first_status.get("deviceStatus")
+                if isinstance(device_status, str) and device_status:
+                    return device_status
+
+        raise ValueError("missing status payload")
+
+    def _update_status_from_result(self, result):
+        try:
+            result_list_str = self._extract_status_payload(result)
+            result_list = [int(i.strip()) for i in result_list_str.split(",")]
+            if len(result_list) < _MIN_STATUS_VALUES:
+                raise ValueError(
+                    f"status payload has {len(result_list)} values, "
+                    f"expected at least {_MIN_STATUS_VALUES}"
+                )
+
+            fan_mode_id = result_list[0]
+            hvac_mode_id = result_list[4]
+            swing_mode_id = result_list[209]
+            if fan_mode_id not in self.fan_mode_lookup:
+                raise ValueError(f"unknown fan mode id {fan_mode_id}")
+            if hvac_mode_id not in self.hvac_mode_lookup:
+                raise ValueError(f"unknown hvac mode id {hvac_mode_id}")
+            if swing_mode_id not in _STATUS_SWING_MODES:
+                raise ValueError(f"unknown swing mode id {swing_mode_id}")
+
+            status = {
+                "desired_temperature": result_list[9],
+                "indoor_temperature": result_list[10],
+                "hvac_mode_id": hvac_mode_id,
+                "hvac_mode": self.hvac_mode_lookup[hvac_mode_id],
+                "fan_mode_id": fan_mode_id,
+                "fan_mode": self.fan_mode_lookup[fan_mode_id],
+                "screen_on": result_list[58] == 1,
+                "power_on": result_list[5] == 1,
+                "aux_heat": result_list[45] == 1,
+                "nature_wind": result_list[44] == 1,
+                "swing_mode_id": swing_mode_id,
+            }
+        except (IndexError, TypeError, ValueError):
+            _LOGGER.error("Failed to parse Hisense status response", exc_info=True)
+            return False
+
+        self.status.update(status)
+        return True
+
+    async def _send_command_and_update_status(self, url, command_data):
+        result = await self._robust_send_command(
+            url,
+            command_data,
+            status_required=False,
+        )
+        if result is True:
+            return True
+        if result is None:
+            return bool(await self.check_status())
+        return False
 
     async def turn_on(self):
         command_data = deepcopy(self.power_data_template)
         command_data["attributes"] = "{\"onAndOff\":\"On\"}"
-        self.status["power_on"] = True
-        await self._robust_send_command(self.power_url, command_data)
+        return await self._send_command_and_update_status(self.power_url, command_data)
 
     async def turn_off(self):
         command_data = deepcopy(self.power_data_template)
         command_data["attributes"] = "{\"onAndOff\":\"Off\"}"
-        self.status["power_on"] = False
-        await self._robust_send_command(self.power_url, command_data)
+        return await self._send_command_and_update_status(self.power_url, command_data)
 
     async def send_logic_command(self, id: int, param: int):
         command_data = deepcopy(self.command_data_template)
         command_data["cmdList"] = [
             {"cmdId": id, "cmdOrder": 0, "cmdParm": param, "delayTime": 0}
         ]
-        await self._robust_send_command(self.command_url, command_data)
+        return await self._send_command_and_update_status(self.command_url, command_data)
 
     async def check_status(self):
-        await self._robust_send_command(self.check_url, self.check_data_template)
+        if await self._robust_send_command(self.check_url, self.check_data_template):
+            return self.get_status()
+        return None
 
     def get_status(self):
-        return self.status
+        return dict(self.status)
 
     async def refresh(self):
         refresh_data = {
@@ -298,9 +379,16 @@ class HiSenseAC:
                                          headers=self.refresh_headers,
                                          data=refresh_data) as response:
                 result = await response.json()
-                self.access_token = result[0]["token"]
+                if not isinstance(result, list) or not result:
+                    _LOGGER.error("Hisense token refresh returned unexpected body: %s", result)
+                    return False
+                token = result[0].get("token") if isinstance(result[0], dict) else None
+                if not token:
+                    _LOGGER.error("Hisense token refresh response did not include token")
+                    return False
+                self.access_token = token
                 _LOGGER.debug(f"Get access token: {self.access_token}")
                 return True
-        except:
-            _LOGGER.error("Failed to refresh token")
+        except Exception:
+            _LOGGER.error("Failed to refresh token", exc_info=True)
             return False

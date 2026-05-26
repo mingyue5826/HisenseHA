@@ -1,103 +1,67 @@
 from homeassistant.components.switch import SwitchEntity
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.core import HomeAssistant
-from .const import DOMAIN, device_suggested_object_id
+from homeassistant.exceptions import HomeAssistantError
+
+from .const import DOMAIN
+from .entity import HisenseEntity
+
 import logging
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    api = hass.data[DOMAIN][config_entry.entry_id]
-    entities = [AcScreenSwitch(api[device_id]) for device_id in api]
-    async_add_entities(entities, True)
-    entities = [AuxHeatSwitch(api[device_id]) for device_id in api]
-    async_add_entities(entities, True)
+    coordinators = hass.data[DOMAIN][config_entry.entry_id]
+    entities = [AcScreenSwitch(coordinator) for coordinator in coordinators.values()]
+    async_add_entities(entities)
+    entities = [AuxHeatSwitch(coordinator) for coordinator in coordinators.values()]
+    async_add_entities(entities)
 
 
-class AcScreenSwitch(SwitchEntity):
-    _attr_has_entity_name = True
+class AcScreenSwitch(HisenseEntity, SwitchEntity):
     _attr_translation_key = "screen_panel"
 
-    def __init__(self, api):
-        self._api = api
-        self._attr_unique_id = f"{api.device_id}_screen"
-        self._attr_suggested_object_id = device_suggested_object_id(
-            api.device_id, "screen"
-        )
-        self._is_on = True
+    def __init__(self, coordinator):
+        super().__init__(coordinator, "screen", "screen")
         self._attr_icon = "mdi:clock-digital"
 
     @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._api.device_id)},
-            "name": "Hisense AC",
-            "translation_key": "hisense_ac",
-            "manufacturer": "Hisense",
-        }
-
-    @property
     def is_on(self):
-        return self._is_on
+        return self.status.get("screen_on", True)
 
     async def async_turn_on(self):
         _LOGGER.debug(f"Turning on screen for {self._attr_unique_id}")
-        await self._api.send_logic_command(41, 1)
-        self._is_on = True
-        await self.async_update()
-        self.async_schedule_update_ha_state(True)
+        if await self.client.send_logic_command(41, 1):
+            self.coordinator.async_update_from_client()
+            return
+        raise HomeAssistantError("Failed to turn on Hisense AC screen")
 
     async def async_turn_off(self):
         _LOGGER.debug(f"Turning off screen for {self._attr_unique_id}")
-        await self._api.send_logic_command(41, 0)
-        self._is_on = False
-        await self.async_update()
-        self.async_schedule_update_ha_state(True)
-
-    async def async_update(self):
-        status = self._api.get_status()
-        self._is_on = status.get("screen_on", True)
+        if await self.client.send_logic_command(41, 0):
+            self.coordinator.async_update_from_client()
+            return
+        raise HomeAssistantError("Failed to turn off Hisense AC screen")
 
 
-class AuxHeatSwitch(SwitchEntity):
-    _attr_has_entity_name = True
+class AuxHeatSwitch(HisenseEntity, SwitchEntity):
     _attr_translation_key = "auxiliary_heat"
 
-    def __init__(self, api):
-        self._api = api
-        self._attr_unique_id = f"{api.device_id}_aux_heat"
-        self._attr_suggested_object_id = device_suggested_object_id(
-            api.device_id, "aux_heat"
-        )
-        self._is_on = False
+    def __init__(self, coordinator):
+        super().__init__(coordinator, "aux_heat", "aux_heat")
         self._attr_icon = "mdi:heating-coil"
 
     @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._api.device_id)},
-            "name": "Hisense AC",
-            "translation_key": "hisense_ac",
-            "manufacturer": "Hisense",
-        }
-
-    @property
     def is_on(self):
-        return self._is_on
+        return self.status.get("aux_heat", False)
 
     async def async_turn_on(self):
-        await self._api.send_logic_command(28, 1)
-        self._is_on = True
-        await self.async_update()
-        self.async_schedule_update_ha_state(True)
+        if await self.client.send_logic_command(28, 1):
+            self.coordinator.async_update_from_client()
+            return
+        raise HomeAssistantError("Failed to turn on Hisense AC auxiliary heat")
 
     async def async_turn_off(self):
-        await self._api.send_logic_command(28, 0)
-        self._is_on = False
-        await self.async_update()
-        self.async_schedule_update_ha_state(True)
-
-    async def async_update(self):
-        status = self._api.get_status()
-        self._is_on = status.get("aux_heat", False)
+        if await self.client.send_logic_command(28, 0):
+            self.coordinator.async_update_from_client()
+            return
+        raise HomeAssistantError("Failed to turn off Hisense AC auxiliary heat")

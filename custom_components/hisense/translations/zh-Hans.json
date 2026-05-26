@@ -21,6 +21,8 @@
     "error": {
       "cannot_connect": "无法连接到设备",
       "invalid_auth": "登录失败",
+      "no_devices": "没有找到支持的海信空调设备",
+      "no_homes": "此账号下没有找到家庭",
       "unknown": "发生未知错误"
     },
     "title": "海信空调"

@@ -4,7 +4,8 @@ from homeassistant.core import callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.helpers.entity import EntityCategory
 
-from .const import DOMAIN, climate_limits_signal, device_suggested_object_id
+from .const import DOMAIN, climate_limits_signal
+from .entity import HisenseEntity
 
 CLIMATE_LIMIT_DESCRIPTIONS: tuple[NumberEntityDescription, ...] = (
     NumberEntityDescription(
@@ -31,51 +32,37 @@ CLIMATE_LIMIT_DESCRIPTIONS: tuple[NumberEntityDescription, ...] = (
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    api = hass.data[DOMAIN][config_entry.entry_id]
+    coordinators = hass.data[DOMAIN][config_entry.entry_id]
     entities = [
-        HisenseClimateLimitNumber(api[device_id], desc, desc.key == "climate_min_temp")
-        for device_id in api
+        HisenseClimateLimitNumber(coordinator, desc, desc.key == "climate_min_temp")
+        for coordinator in coordinators.values()
         for desc in CLIMATE_LIMIT_DESCRIPTIONS
     ]
-    async_add_entities(entities, True)
+    async_add_entities(entities)
 
 
-class HisenseClimateLimitNumber(NumberEntity):
+class HisenseClimateLimitNumber(HisenseEntity, NumberEntity):
     """Configuration slider for climate min or max temperature bound (0–100 °C)."""
 
     entity_description: NumberEntityDescription
-    _attr_has_entity_name = True
 
-    def __init__(self, api, description: NumberEntityDescription, is_min: bool):
-        self._api = api
+    def __init__(self, coordinator, description: NumberEntityDescription, is_min: bool):
+        super().__init__(coordinator, description.key, description.key)
         self.entity_description = description
         self._is_min = is_min
-        self._attr_unique_id = f"{api.device_id}_{description.key}"
-        self._attr_suggested_object_id = device_suggested_object_id(
-            api.device_id, description.key
-        )
-
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._api.device_id)},
-            "name": "Hisense AC",
-            "translation_key": "hisense_ac",
-            "manufacturer": "Hisense",
-        }
 
     @property
     def native_value(self) -> float | None:
         if self._is_min:
-            return float(self._api.climate_min_temp)
-        return float(self._api.climate_max_temp)
+            return float(self.client.climate_min_temp)
+        return float(self.client.climate_max_temp)
 
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
         self.async_on_remove(
             async_dispatcher_connect(
                 self.hass,
-                climate_limits_signal(self._api.device_id),
+                climate_limits_signal(self.client.device_id),
                 self._handle_limits_updated,
             )
         )
@@ -87,12 +74,12 @@ class HisenseClimateLimitNumber(NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         v = int(max(0, min(100, round(value))))
         if self._is_min:
-            self._api.climate_min_temp = v
-            if self._api.climate_min_temp > self._api.climate_max_temp:
-                self._api.climate_max_temp = self._api.climate_min_temp
+            self.client.climate_min_temp = v
+            if self.client.climate_min_temp > self.client.climate_max_temp:
+                self.client.climate_max_temp = self.client.climate_min_temp
         else:
-            self._api.climate_max_temp = v
-            if self._api.climate_max_temp < self._api.climate_min_temp:
-                self._api.climate_min_temp = self._api.climate_max_temp
-        async_dispatcher_send(self.hass, climate_limits_signal(self._api.device_id))
+            self.client.climate_max_temp = v
+            if self.client.climate_max_temp < self.client.climate_min_temp:
+                self.client.climate_min_temp = self.client.climate_max_temp
+        async_dispatcher_send(self.hass, climate_limits_signal(self.client.device_id))
         self.async_write_ha_state()

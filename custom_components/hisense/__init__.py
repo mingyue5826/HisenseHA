@@ -1,6 +1,8 @@
 from homeassistant import config_entries, core
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
 from .const import DOMAIN
+from .coordinator import HisenseDataUpdateCoordinator
 from .pyhisenseapi import HiSenseAC
 
 
@@ -14,12 +16,15 @@ async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.Conf
         device_id = device_info["device_id"]
         wifi_id = device_info["wifi_id"]
         refresh_token = device_info["refresh_token"]
-        hass.data[DOMAIN][entry.entry_id][device_id] = HiSenseAC(
+        client = HiSenseAC(
             wifi_id=wifi_id,
             device_id=device_id,
             refresh_token=refresh_token,
             session=session
         )
+        coordinator = HisenseDataUpdateCoordinator(hass, client)
+        await coordinator.async_config_entry_first_refresh()
+        hass.data[DOMAIN][entry.entry_id][device_id] = coordinator
 
     # Load platforms
     await hass.config_entries.async_forward_entry_setups(
@@ -27,7 +32,11 @@ async def async_setup_entry(hass: core.HomeAssistant, entry: config_entries.Conf
     )
     return True
 
+
 async def async_unload_entry(hass: core.HomeAssistant, entry: config_entries.ConfigEntry):
-    return await hass.config_entries.async_unload_platforms(
+    unload_ok = await hass.config_entries.async_unload_platforms(
         entry, ["climate", "switch", "button", "number"]
     )
+    if unload_ok:
+        hass.data[DOMAIN].pop(entry.entry_id, None)
+    return unload_ok

@@ -17,30 +17,29 @@ from homeassistant.components.climate.const import (
     SWING_VERTICAL
 )
 from homeassistant.const import UnitOfTemperature, ATTR_TEMPERATURE
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from .const import DOMAIN, climate_limits_signal, device_suggested_object_id
+from .const import DOMAIN, climate_limits_signal
+from .entity import HisenseEntity
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    api = hass.data[DOMAIN][config_entry.entry_id]
-    entities = [HisenseACClimate(api[device_id], config_entry.entry_id) for device_id in api]
-    async_add_entities(entities, True)
+    coordinators = hass.data[DOMAIN][config_entry.entry_id]
+    entities = [
+        HisenseACClimate(coordinator)
+        for coordinator in coordinators.values()
+    ]
+    async_add_entities(entities)
 
 
-class HisenseACClimate(ClimateEntity):
-    _attr_has_entity_name = True
+class HisenseACClimate(HisenseEntity, ClimateEntity):
     _attr_translation_key = "thermostat"
 
-    def __init__(self, api, config_entry_id):
-        self._api = api
-        self._config_entry_id = config_entry_id
-        self._attr_unique_id = f"{api.device_id}_climate"
-        self._attr_suggested_object_id = device_suggested_object_id(
-            api.device_id, "climate"
-        )
+    def __init__(self, coordinator):
+        super().__init__(coordinator, "climate", "climate")
         self._attr_supported_features = (
             ClimateEntityFeature.TURN_ON |
             ClimateEntityFeature.TURN_OFF |
@@ -55,13 +54,7 @@ class HisenseACClimate(ClimateEntity):
             HVACMode.COOL, HVACMode.HEAT, HVACMode.DRY, HVACMode.FAN_ONLY, HVACMode.OFF]
         self._attr_swing_modes = [
             SWING_ON, SWING_OFF, SWING_HORIZONTAL, SWING_VERTICAL]
-        self._attr_swing_mode = SWING_OFF
         self._attr_temperature_unit = UnitOfTemperature.CELSIUS
-        self._attr_target_temperature = None
-        self._attr_current_temperature = None
-        self._attr_is_on = False
-        self._attr_hvac_mode = None
-        self._attr_fan_mode = None
         self._hvac_mode_lookup = {
             0: HVACMode.FAN_ONLY,
             1: HVACMode.HEAT,
@@ -104,28 +97,44 @@ class HisenseACClimate(ClimateEntity):
         }
 
     @property
-    def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._api.device_id)},
-            "name": "Hisense AC",
-            "translation_key": "hisense_ac",
-            "manufacturer": "Hisense",
-        }
-
-    @property
     def min_temp(self):
-        return float(self._api.climate_min_temp)
+        return float(self.client.climate_min_temp)
 
     @property
     def max_temp(self):
-        return float(self._api.climate_max_temp)
+        return float(self.client.climate_max_temp)
+
+    @property
+    def current_temperature(self):
+        return self.status.get("indoor_temperature")
+
+    @property
+    def target_temperature(self):
+        return self.status.get("desired_temperature")
+
+    @property
+    def hvac_mode(self):
+        if not self.status.get("power_on"):
+            return HVACMode.OFF
+        return self._hvac_mode_lookup.get(
+            self.status.get("hvac_mode_id"),
+            HVACMode.AUTO,
+        )
+
+    @property
+    def fan_mode(self):
+        return self._fan_mode_lookup.get(self.status.get("fan_mode_id"), FAN_AUTO)
+
+    @property
+    def swing_mode(self):
+        return self._swing_mode_lookup.get(self.status.get("swing_mode_id"), SWING_OFF)
 
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
         self.async_on_remove(
             async_dispatcher_connect(
                 self.hass,
-                climate_limits_signal(self._api.device_id),
+                climate_limits_signal(self.client.device_id),
                 self._handle_climate_limits_updated,
             )
         )
@@ -134,62 +143,46 @@ class HisenseACClimate(ClimateEntity):
     def _handle_climate_limits_updated(self, *_args):
         self.async_write_ha_state()
 
-    async def async_update(self):
-        status = self._api.get_status()
-        self._attr_is_on = status.get("power_on")
-        self._attr_current_temperature = status.get("indoor_temperature")
-        self._attr_target_temperature = status.get("desired_temperature")
-        if self._attr_is_on:
-            self._attr_hvac_mode = self._hvac_mode_lookup[status.get(
-                "hvac_mode_id", 4)]
-        else:
-            self._attr_hvac_mode = HVACMode.OFF
-        self._attr_fan_mode = self._fan_mode_lookup[status.get(
-            "fan_mode_id", 0)]
-        self._attr_swing_mode = self._swing_mode_lookup[status.get(
-            "swing_mode_id", 0)]
-
     async def async_set_temperature(self, **kwargs):
         """Set new target temperature."""
-        if not self._api.get_status().get("power_on"):
+        if not self.status.get("power_on"):
             _LOGGER.error("Cannot set temperature when power is off")
             return
-        if self._attr_hvac_mode == HVACMode.FAN_ONLY:
+        if self.hvac_mode == HVACMode.FAN_ONLY:
             _LOGGER.error("Cannot set temperature in 'Fan Only' mode")
             return
 
         temperature = kwargs.get(ATTR_TEMPERATURE)
         if temperature is not None:
-            # Convert temperature to Celsius if necessary
-            unit = self.hass.config.units.temperature_unit
-            if unit == UnitOfTemperature.FAHRENHEIT:
-                temperature = temperature * 9 / 5 + 32
-            # Now, temperature is guaranteed to be in Celsius
-            await self._api.send_logic_command(6, int(temperature))
-            await self.async_update()
+            if await self.client.send_logic_command(6, int(temperature)):
+                self.coordinator.async_update_from_client()
+                return
+            raise HomeAssistantError("Failed to set Hisense AC temperature")
 
     async def async_set_fan_mode(self, fan_mode):
         """Set new target fan mode."""
-        if not self._api.get_status().get("power_on"):
+        if not self.status.get("power_on"):
             _LOGGER.error("Cannot set fan mode when power is off")
             return
         fan_id = self._fan_mode_to_id.get(fan_mode)
-        await self._api.send_logic_command(1, fan_id)
-        self._attr_fan_mode = fan_mode
-        await self.async_update()
+        if fan_id is None:
+            raise HomeAssistantError(f"Unsupported Hisense AC fan mode: {fan_mode}")
+        if await self.client.send_logic_command(1, fan_id):
+            self.coordinator.async_update_from_client()
+            return
+        raise HomeAssistantError("Failed to set Hisense AC fan mode")
 
     async def async_set_swing_mode(self, swing_mode):
         """Set new target swing mode."""
-        if not self._api.get_status().get("power_on"):
+        if not self.status.get("power_on"):
             _LOGGER.error("Cannot set swing mode when power is off")
             return
         if swing_mode in self._attr_swing_modes:
             swing_id = self._swing_mode_to_id.get(swing_mode)
-            await self._api.send_logic_command(62, swing_id)
-            # Update the entity's current swing mode
-            self._attr_swing_mode = swing_mode
-            # Notify Home Assistant that the entity's state has changed
-            self.async_schedule_update_ha_state(True)
+            if await self.client.send_logic_command(62, swing_id):
+                self.coordinator.async_update_from_client()
+                return
+            raise HomeAssistantError("Failed to set Hisense AC swing mode")
         else:
             _LOGGER.error("Unsupported swing mode: %s", swing_mode)
 
@@ -200,32 +193,37 @@ class HisenseACClimate(ClimateEntity):
             return
 
         hvac_id = self._hvac_mode_to_id.get(hvac_mode)
-        power_on = self._api.get_status().get("power_on", False)
-        same_hvac = self._api.get_status().get("hvac_mode_id") == hvac_id
+        if hvac_id is None:
+            raise HomeAssistantError(f"Unsupported Hisense AC HVAC mode: {hvac_mode}")
+        power_on = self.status.get("power_on", False)
+        same_hvac = self.status.get("hvac_mode_id") == hvac_id
 
         # power on same hvac   -> set hvac (do nothing)
         # power on different hvac -> set hvac
         # power off same hvac -> turn on
         # power off different hvac -> turn on and set hvac
         if power_on:
-            await self._api.send_logic_command(3, hvac_id)
-            self._attr_hvac_mode = hvac_mode
+            success = await self.client.send_logic_command(3, hvac_id)
         elif same_hvac:
-            await self.async_turn_on()
+            success = await self.client.turn_on()
         else:
-            await self.async_turn_on()
+            if not await self.client.turn_on():
+                raise HomeAssistantError("Failed to turn on Hisense AC")
             await asyncio.sleep(4)
-            await self._api.send_logic_command(3, hvac_id)
-            self._attr_hvac_mode = hvac_mode
-        await self.async_update()
+            success = await self.client.send_logic_command(3, hvac_id)
+        if success:
+            self.coordinator.async_update_from_client()
+            return
+        raise HomeAssistantError("Failed to set Hisense AC HVAC mode")
 
     async def async_turn_on(self):
-        await self._api.turn_on()
-        self._attr_is_on = True
-        await self.async_update()
+        if await self.client.turn_on():
+            self.coordinator.async_update_from_client()
+            return
+        raise HomeAssistantError("Failed to turn on Hisense AC")
 
     async def async_turn_off(self):
-        await self._api.turn_off()
-        self._attr_hvac_mode = HVACMode.OFF
-        self._attr_is_on = False
-        await self.async_update()
+        if await self.client.turn_off():
+            self.coordinator.async_update_from_client()
+            return
+        raise HomeAssistantError("Failed to turn off Hisense AC")
