@@ -16,6 +16,10 @@ Home Assistant custom integration for **Hisense** cloud-connected smart devices.
 
 ### Option A: HACS
 
+[![Open your Home Assistant instance and add this repository in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mingyue5826&repository=HisenseHA&category=integration)
+
+Click the button above, or manually:
+
 1. Open **HACS** in Home Assistant.
 2. Go to **Integrations** → menu (⋮) → **Custom repositories**.
 3. Add repository `https://github.com/manymuch/HisenseHA`, category **Integration**.

@@ -18,6 +18,10 @@
 
 ### 方式一：HACS
 
+[![Open your Home Assistant instance and add this repository in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mingyue5826&repository=HisenseHA&category=integration)
+
+点上面的按钮一键添加，或者手动操作：
+
 1. 在 Home Assistant 中打开 **HACS**。
 2. 进入 **集成** → 右上角菜单（⋮）→ **自定义仓库**。
 3. 添加仓库 `https://github.com/manymuch/HisenseHA`，类别选 **集成（Integration）**。
