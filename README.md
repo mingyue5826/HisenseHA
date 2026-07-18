@@ -4,7 +4,7 @@
 
 [简体中文](README_zh-Hans.md)
 
-Home Assistant custom integration for **Hisense** cloud-connected smart devices. Only **Air conditioners (AC)** are supported. If you want support for more device types, **pull requests** are welcome.
+Home Assistant custom integration for **Hisense** cloud-connected smart devices. Only **Air conditioners (AC)** and **Fefrigerator** are supported. If you want support for more device types, **pull requests** are welcome.
 
 ## Requirements
 

@@ -149,14 +149,76 @@ class HiSenseLogin:
             else:
                 return None
 
+    async def get_all_devices(self, access_token, home_id, refresh_token):
+        """Return all supported devices (空调 and 冰箱) with type info."""
+        timestamp = self.get_timestamp()
+        url = 'https://api-wg.hismarttv.com/wg/dm/getHomeDeviceList'
+        headers = {
+            'Host': 'api-wg.hismarttv.com',
+            'Connection': 'Keep-Alive',
+            'Accept-Encoding': 'gzip',
+            'User-Agent': 'okhttp/4.10.0',
+        }
+        params = {
+            'sign': '',
+            'languageId': '0',
+            'version': '8.0',
+            'accessToken': access_token,
+            'homeId': home_id,
+            'timezone': '28800',
+            'format': '1',
+            'timeStamp': str(timestamp),
+        }
+        async with self.session.get(url, headers=headers, params=params) as response:
+            result = await response.json()
+            result_code = result["response"]["resultCode"]
+            if result_code == 0:
+                device_list = result["response"]["deviceList"]
+                devices = {}
+                raw_labels = {}
+                for device in device_list:
+                    device_type_name = device["deviceTypeName"]
+                    device_type = None
+                    if "空调" in device_type_name:
+                        device_type = "空调"
+                    elif "冰箱" in device_type_name:
+                        device_type = "冰箱"
+                    
+                    if device_type:
+                        did = device["deviceId"]
+                        label = _device_select_label(device, did)
+                        raw_labels[did] = label
+                        devices[did] = {
+                            "device_id": did,
+                            "wifi_id": device["wifiId"],
+                            "refresh_token": refresh_token,
+                            "device_type": device_type,
+                            "device_type_name": device_type_name,
+                            "device_name": device.get("deviceName", ""),
+                            "device_code": device.get("deviceCode", ""),
+                            "label": label,
+                        }
+                
+                label_counts = Counter(raw_labels.values())
+                for did, base in raw_labels.items():
+                    if label_counts[base] > 1:
+                        suffix = did[-6:] if len(did) >= 6 else did
+                        devices[did]["label"] = f"{base} ({suffix})"
+                
+                return devices
+            else:
+                return None
+
 
 class HiSenseAC:
-    def __init__(self, wifi_id, device_id, refresh_token, session):
+    def __init__(self, wifi_id, device_id, refresh_token, session, device_name="", entity_name=""):
         self.wifi_id = wifi_id
         self.device_id = device_id
         self.refresh_token = refresh_token
         self.access_token = None
         self.session = session
+        self.device_name = device_name
+        self.entity_name = entity_name
         app_name_encoding = "%E6%B5%B7%E4%BF%A1%E6%99%BA%E6%85%A7%E5%AE%B6"
         # app_name = "海信智慧家"
         # app_name_encoding = urllib.parse.quote(app_name)
@@ -391,4 +453,247 @@ class HiSenseAC:
                 return True
         except Exception:
             _LOGGER.error("Failed to refresh token", exc_info=True)
+            return False
+
+
+class HiSenseFridge:
+    def __init__(self, wifi_id, device_id, refresh_token, session, device_name="", entity_name=""):
+        self.wifi_id = wifi_id
+        self.device_id = device_id
+        self.refresh_token = refresh_token
+        self.access_token = None
+        self.session = session
+        self.device_name = device_name
+        self.entity_name = entity_name
+        app_name_encoding = "%E6%B5%B7%E4%BF%A1%E6%99%BA%E6%85%A7%E5%AE%B6"
+        self.headers = {
+            'Host': 'api-wg.hismarttv.com',
+            'Content-Type': 'application/json',
+            'Connection': 'keep-alive',
+            'Accept': '*/*',
+            'User-Agent': f"{app_name_encoding}/4 CFNetwork/1492.0.1 Darwin/23.3.0",
+            'Accept-Language': 'zh-CN,zh-Hans;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+        }
+        self.refresh_headers = {
+            'Host': 'bas-wg.hismarttv.com',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Connection': 'keep-alive',
+            'Accept': '*/*',
+            'User-Agent': f"{app_name_encoding}/4 CFNetwork/1492.0.1 Darwin/23.3.0",
+            'Accept-Language': 'zh-CN,zh-Hans;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br'
+        }
+        self.url_head = "https://api-wg.hismarttv.com/agw/dsg/outer"
+        self.power_url = f"{self.url_head}/sendDeviceModelCmd?accessToken="
+        self.command_url = f"{self.url_head}/uploadRemoteLogicCmd?accessToken="
+        self.check_url = f"{self.url_head}/getDeviceLogicalStatusArray?accessToken="
+        self.refresh_url = "https://bas-wg.hismarttv.com/aaa/refresh_token2"
+        self.power_data_template = {
+            "wifiId": wifi_id,
+            "deviceId": device_id,
+            "extendParam": "1",
+            "cmdVersion": "0",
+        }
+        self.check_data_template = {
+            "deviceList": [
+                {
+                    "wifiId": wifi_id,
+                    "deviceId": device_id,
+                }
+            ]
+        }
+        self.command_data_template = {
+            "wifiId": wifi_id,
+            "deviceId": device_id,
+            "extendParm": "1",
+            "cmdVersion": "1684085201",
+        }
+        self.status = {
+            "power_on": False,
+            "refrigerator_set_temperature": 5,
+            "freeze_set_temperature": -18,
+            "variation_set_temperature": -40,
+            "refrigerator_real_temperature": 5,
+            "freeze_real_temperature": -18,
+            "variation_real_temperature": 0,
+            "ambient_temperature": 25,
+            "work_mode_id": 0,
+            "variation_mode_id": 0,
+        }
+        self.work_mode_lookup = {
+            0: "NORMAL",
+            64: "SMART",
+            65: "QUICK_COOLING",
+        }
+        self.variation_mode_lookup = {
+            -2: "ZERO_C_FRESH",
+            -1: "ORIGINAL_FRESH",
+            0: "NORMAL",
+            2: "ZERO_C_FRESH",
+        }
+
+    async def _send_command(self, url, command_data, status_required=True):
+        post_url = f"{url}{self.access_token}"
+        try:
+            async with self.session.post(
+                post_url,
+                headers=self.headers,
+                json=command_data,
+            ) as response:
+                result = await response.json()
+        except Exception:
+            _LOGGER.error("Hisense fridge request failed", exc_info=True)
+            return False
+
+        response_obj = result.get("response")
+        if not isinstance(response_obj, dict):
+            _LOGGER.error("Hisense fridge response missing response object: %s", result)
+            return False
+
+        result_code = response_obj.get("resultCode")
+        if result_code != 0:
+            _LOGGER.warning("Hisense fridge request failed with resultCode=%s", result_code)
+            return False
+
+        if not status_required:
+            try:
+                self._extract_status_payload(result)
+            except ValueError:
+                _LOGGER.debug("Hisense fridge response accepted without status payload")
+                return None
+
+        if self._update_status_from_result(result):
+            return True
+
+        if not status_required:
+            return None
+
+        _LOGGER.error("Hisense fridge response did not include a usable status payload")
+        return False
+
+    async def _robust_send_command(self, url, command_data, status_required=True):
+        result = await self._send_command(url, command_data, status_required)
+        if result is not False:
+            return result
+        _LOGGER.info("Attempting to refresh token and retry fridge command")
+        if not await self.refresh():
+            _LOGGER.error("Failed to refresh fridge token")
+            return False
+        return await self._send_command(url, command_data, status_required)
+
+    def _extract_status_payload(self, result):
+        response = result.get("response")
+        if not isinstance(response, dict):
+            raise ValueError("missing response object")
+
+        pre_status = response.get("preStatus")
+        if isinstance(pre_status, str) and pre_status:
+            return pre_status
+
+        status_list = response.get("deviceStatusList")
+        if isinstance(status_list, list) and status_list:
+            first_status = status_list[0]
+            if isinstance(first_status, dict):
+                device_status = first_status.get("deviceStatus")
+                if isinstance(device_status, str) and device_status:
+                    return device_status
+
+        raise ValueError("missing status payload")
+
+    def _update_status_from_result(self, result):
+        try:
+            result_list_str = self._extract_status_payload(result)
+            result_list = [int(i.strip()) for i in result_list_str.split(",")]
+
+            work_mode_id = result_list[3] if len(result_list) > 3 else 0
+            variation_mode_id = result_list[11] if len(result_list) > 11 else 0
+
+            status = {
+                "refrigerator_temperature": result_list[0] if len(result_list) > 0 else 5,
+                "freeze_temperature": result_list[1] if len(result_list) > 1 else -18,
+                "variation_temperature": result_list[11] if len(result_list) > 11 else 0,
+                "work_mode_id": work_mode_id,
+                "work_mode": self.work_mode_lookup.get(work_mode_id, "NORMAL"),
+                "power_on": result_list[4] == 1 if len(result_list) > 4 else False,
+                "ambient_temperature": result_list[9] if len(result_list) > 9 else 25,
+                "variation_mode_id": variation_mode_id,
+                "variation_mode": self.variation_mode_lookup.get(variation_mode_id, "NORMAL"),
+            }
+        except (IndexError, TypeError, ValueError):
+            _LOGGER.error("Failed to parse Hisense fridge status response", exc_info=True)
+            return False
+
+        self.status.update(status)
+        return True
+
+    async def _send_command_and_update_status(self, url, command_data):
+        result = await self._robust_send_command(
+            url,
+            command_data,
+            status_required=False,
+        )
+        if result is True:
+            return True
+        if result is None:
+            return bool(await self.check_status())
+        return False
+
+    async def turn_on(self):
+        command_data = deepcopy(self.power_data_template)
+        command_data["attributes"] = "{\"onAndOff\":\"On\"}"
+        return await self._send_command_and_update_status(self.power_url, command_data)
+
+    async def turn_off(self):
+        command_data = deepcopy(self.power_data_template)
+        command_data["attributes"] = "{\"onAndOff\":\"Off\"}"
+        return await self._send_command_and_update_status(self.power_url, command_data)
+
+    async def send_logic_command(self, id: int, param: int):
+        command_data = deepcopy(self.command_data_template)
+        command_data["cmdList"] = [
+            {"cmdId": id, "cmdOrder": 0, "cmdParm": param, "delayTime": 0}
+        ]
+        return await self._send_command_and_update_status(self.command_url, command_data)
+
+    async def set_refrigerator_temperature(self, temperature: int):
+        return await self.send_logic_command(1, temperature)
+
+    async def set_freeze_temperature(self, temperature: int):
+        return await self.send_logic_command(2, temperature)
+
+    async def set_work_mode(self, mode_id: int):
+        return await self.send_logic_command(3, mode_id)
+
+    async def check_status(self):
+        if await self._robust_send_command(self.check_url, self.check_data_template):
+            return self.get_status()
+        return None
+
+    def get_status(self):
+        return dict(self.status)
+
+    async def refresh(self):
+        refresh_data = {
+            'refreshToken': self.refresh_token,
+            'appKey': "1234567890",
+            'format': '1',
+        }
+        try:
+            async with self.session.post(self.refresh_url,
+                                         headers=self.refresh_headers,
+                                         data=refresh_data) as response:
+                result = await response.json()
+                if not isinstance(result, list) or not result:
+                    _LOGGER.error("Hisense fridge token refresh returned unexpected body: %s", result)
+                    return False
+                token = result[0].get("token") if isinstance(result[0], dict) else None
+                if not token:
+                    _LOGGER.error("Hisense fridge token refresh response did not include token")
+                    return False
+                self.access_token = token
+                _LOGGER.debug(f"Get fridge access token: {self.access_token}")
+                return True
+        except Exception:
+            _LOGGER.error("Failed to refresh fridge token", exc_info=True)
             return False

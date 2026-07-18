@@ -1,4 +1,4 @@
-"""Data update coordinator for Hisense AC devices."""
+"""Data update coordinator for Hisense devices."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN
-from .pyhisenseapi import HiSenseAC
+from .pyhisenseapi import HiSenseAC, HiSenseFridge
 
 import logging
 
@@ -16,11 +16,17 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class HisenseDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
-    """Coordinator for a single Hisense AC device."""
+    """Coordinator for a single Hisense device (AC or Fridge)."""
 
-    def __init__(self, hass: HomeAssistant, client: HiSenseAC) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        client: HiSenseAC | HiSenseFridge,
+        device_type: str = "空调"
+    ) -> None:
         """Initialize the coordinator."""
         self.client = client
+        self.device_type = device_type
         super().__init__(
             hass,
             _LOGGER,
@@ -43,9 +49,9 @@ class HisenseDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         try:
             status = await self.client.check_status()
         except Exception as err:
-            raise UpdateFailed("Failed to fetch Hisense AC status") from err
+            raise UpdateFailed(f"Failed to fetch Hisense {self.device_type} status") from err
         if not status:
-            raise UpdateFailed("Failed to fetch Hisense AC status")
+            raise UpdateFailed(f"Failed to fetch Hisense {self.device_type} status")
         return status
 
     def async_update_from_client(self) -> None:
