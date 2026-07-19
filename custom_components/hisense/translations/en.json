@@ -30,12 +30,18 @@
   "device": {
     "hisense_ac": {
       "name": "Hisense AC"
+    },
+    "hisense_fridge": {
+      "name": "Hisense Fridge"
     }
   },
   "entity": {
     "climate": {
       "thermostat": {
         "name": "Climate"
+      },
+      "fridge_climate": {
+        "name": "Fridge Control"
       }
     },
     "switch": {
@@ -60,6 +66,40 @@
       },
       "climate_max_temp": {
         "name": "Thermostat max temperature"
+      },
+      "refrigerator_temp_control": {
+        "name": "Refrigerator Temp Control"
+      },
+      "freeze_temp_control": {
+        "name": "Freezer Temp Control"
+      }
+    },
+    "sensor": {
+      "refrigerator_temp": {
+        "name": "Refrigerator Temperature"
+      },
+      "freeze_temp": {
+        "name": "Freezer Temperature"
+      },
+      "variation_temp": {
+        "name": "Variable Zone Temperature"
+      },
+      "ambient_temp": {
+        "name": "Ambient Temperature"
+      },
+      "work_mode": {
+        "name": "Work Mode"
+      },
+      "variation_mode": {
+        "name": "Variable Zone Mode"
+      }
+    },
+    "select": {
+      "work_mode_select": {
+        "name": "Work Mode Select"
+      },
+      "variation_mode_select": {
+        "name": "Variable Zone Mode Select"
       }
     }
   }

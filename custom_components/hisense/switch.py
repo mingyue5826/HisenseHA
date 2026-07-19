@@ -11,9 +11,12 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     coordinators = hass.data[DOMAIN][config_entry.entry_id]
-    entities = [AcScreenSwitch(coordinator) for coordinator in coordinators.values()]
+    ac_coordinators = [
+        c for c in coordinators.values() if c.device_type == "空调"
+    ]
+    entities = [AcScreenSwitch(coordinator) for coordinator in ac_coordinators]
     async_add_entities(entities)
-    entities = [AuxHeatSwitch(coordinator) for coordinator in coordinators.values()]
+    entities = [AuxHeatSwitch(coordinator) for coordinator in ac_coordinators]
     async_add_entities(entities)
 
 
