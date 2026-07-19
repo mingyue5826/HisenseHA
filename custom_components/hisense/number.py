@@ -1,6 +1,7 @@
 from homeassistant.components.number import NumberEntity, NumberEntityDescription, NumberMode
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.helpers.entity import EntityCategory
 
@@ -139,7 +140,11 @@ class HisenseFridgeTemperatureNumber(HisenseEntity, NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         v = round(value)
         if self.entity_description.key == "refrigerator_temp":
-            await self.client.set_refrigerator_temperature(v)
+            success = await self.client.set_refrigerator_temperature(v)
+            label = "refrigerator"
         else:
-            await self.client.set_freeze_temperature(v)
+            success = await self.client.set_freeze_temperature(v)
+            label = "freezer"
+        if not success:
+            raise HomeAssistantError(f"Failed to set Hisense {label} temperature")
         self.coordinator.async_update_from_client()

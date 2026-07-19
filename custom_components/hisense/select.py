@@ -1,5 +1,8 @@
+"""Disabled refrigerator mode entities pending validated API mappings."""
+
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.const import EntityCategory
+from homeassistant.exceptions import HomeAssistantError
 
 from .const import DOMAIN
 from .entity import HisenseEntity
@@ -59,4 +62,6 @@ class HisenseFridgeModeSelect(HisenseEntity, SelectEntity):
         return self.status.get("variation_mode")
 
     async def async_select_option(self, option: str) -> None:
-        pass
+        raise HomeAssistantError(
+            "Hisense refrigerator mode control is not available yet"
+        )

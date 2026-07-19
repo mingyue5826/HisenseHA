@@ -1,12 +1,8 @@
-import logging
-
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.const import UnitOfTemperature
 
 from .const import DOMAIN
 from .entity import HisenseEntity
-
-_LOGGER = logging.getLogger(__name__)
 
 FRIDGE_SENSOR_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(

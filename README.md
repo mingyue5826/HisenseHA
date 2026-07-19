@@ -4,19 +4,19 @@
 
 [简体中文](README_zh-Hans.md)
 
-Home Assistant custom integration for **Hisense** cloud-connected smart devices. Only **Air conditioners (AC)** and **Fefrigerator** are supported. If you want support for more device types, **pull requests** are welcome.
+Home Assistant custom integration for **Hisense** cloud-connected smart devices. **Air conditioners (AC)** and **refrigerators** are supported. If you want support for more device types, **pull requests** are welcome.
 
 ## Requirements
 
 - **Home Assistant** 2025.6 or newer (for older cores, see [releases](https://github.com/manymuch/HisenseHA/releases)).
 - A **Hisense account** that can sign in to the official mobile app (same username and password).
-- The AC must already be paired in the app and belong to a **home**.
+- The AC or refrigerator must already be paired in the app and belong to a **home**.
 
 ## Install the integration
 
 ### Option A: HACS
 
-[![Open your Home Assistant instance and add this repository in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mingyue5826&repository=HisenseHA&category=integration)
+[![Open your Home Assistant instance and add this repository in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=manymuch&repository=HisenseHA&category=integration)
 
 Click the button above, or manually:
 
@@ -39,8 +39,10 @@ Click the button above, or manually:
 1. Go to **Settings** → **Devices & services** → **Add integration**.
 2. Search for **Hisense Smart Devices** (or **Hisense**) and select it.
 3. Enter your **Hisense app username and password** (wrong credentials will show an authentication error).
-4. Choose the **home** that contains your AC.
+4. Choose the **home** that contains your AC or refrigerator.
 5. Select one or more **devices**, then finish the wizard.
+
+Refrigerator mode controls are currently kept disabled until their cloud API mappings are validated. Temperature sensors and refrigerator/freezer temperature controls are available.
 
 ## Status sync
 

@@ -5,9 +5,6 @@ from homeassistant.helpers import config_validation as cv
 from .const import DOMAIN, CONF_USERNAME, CONF_PASSWORD
 from .pyhisenseapi import HiSenseLogin
 
-SUPPORTED_DEVICE_TYPES = ["空调", "冰箱"]
-
-
 class HisenseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL

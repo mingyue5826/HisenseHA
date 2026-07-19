@@ -6,18 +6,33 @@ _LOGGER = logging.getLogger(__name__)
 
 _STATUS_SWING_MODES = {0, 1, 2, 3}
 _MIN_STATUS_VALUES = 210
+_MIN_FRIDGE_STATUS_VALUES = 12
+
+
+def _device_type_from_name(device_type_name) -> str | None:
+    if not isinstance(device_type_name, str):
+        return None
+    if "空调" in device_type_name:
+        return "空调"
+    if "冰箱" in device_type_name:
+        return "冰箱"
+    return None
+
+
+def _device_text(value) -> str:
+    return value.strip() if isinstance(value, str) else ""
 
 
 def _device_select_label(device: dict, device_id: str) -> str:
-    room = (device.get("roomName") or "").strip()
-    nick = (device.get("deviceNickName") or "").strip()
+    room = _device_text(device.get("roomName"))
+    nick = _device_text(device.get("deviceNickName"))
     if room and nick:
         return f"{room}-{nick}"
     if room:
         return room
     if nick:
         return nick
-    device_name = (device.get("deviceName") or "").strip()
+    device_name = _device_text(device.get("deviceName"))
     if device_name:
         return device_name
     return device_id
@@ -171,43 +186,51 @@ class HiSenseLogin:
         }
         async with self.session.get(url, headers=headers, params=params) as response:
             result = await response.json()
-            result_code = result["response"]["resultCode"]
-            if result_code == 0:
-                device_list = result["response"]["deviceList"]
-                devices = {}
-                raw_labels = {}
-                for device in device_list:
-                    device_type_name = device["deviceTypeName"]
-                    device_type = None
-                    if "空调" in device_type_name:
-                        device_type = "空调"
-                    elif "冰箱" in device_type_name:
-                        device_type = "冰箱"
-                    
-                    if device_type:
-                        did = device["deviceId"]
-                        label = _device_select_label(device, did)
-                        raw_labels[did] = label
-                        devices[did] = {
-                            "device_id": did,
-                            "wifi_id": device["wifiId"],
-                            "refresh_token": refresh_token,
-                            "device_type": device_type,
-                            "device_type_name": device_type_name,
-                            "device_name": device.get("deviceName", ""),
-                            "device_code": device.get("deviceCode", ""),
-                            "label": label,
-                        }
-                
-                label_counts = Counter(raw_labels.values())
-                for did, base in raw_labels.items():
-                    if label_counts[base] > 1:
-                        suffix = did[-6:] if len(did) >= 6 else did
-                        devices[did]["label"] = f"{base} ({suffix})"
-                
-                return devices
-            else:
+            if not isinstance(result, dict):
                 return None
+            response_obj = result.get("response")
+            if not isinstance(response_obj, dict) or response_obj.get("resultCode") != 0:
+                return None
+            device_list = response_obj.get("deviceList")
+            if not isinstance(device_list, list):
+                return None
+            devices = {}
+            raw_labels = {}
+            for device in device_list:
+                if not isinstance(device, dict):
+                    continue
+                device_type_name = device.get("deviceTypeName")
+                device_type = _device_type_from_name(device_type_name)
+                did = device.get("deviceId")
+                wifi_id = device.get("wifiId")
+                if (
+                    device_type is None
+                    or not isinstance(did, str)
+                    or not did
+                    or not isinstance(wifi_id, str)
+                    or not wifi_id
+                ):
+                    continue
+                label = _device_select_label(device, did)
+                raw_labels[did] = label
+                devices[did] = {
+                    "device_id": did,
+                    "wifi_id": wifi_id,
+                    "refresh_token": refresh_token,
+                    "device_type": device_type,
+                    "device_type_name": device_type_name,
+                    "device_name": _device_text(device.get("deviceName")),
+                    "device_code": _device_text(device.get("deviceCode")),
+                    "label": label,
+                }
+                    
+            label_counts = Counter(raw_labels.values())
+            for did, base in raw_labels.items():
+                if label_counts[base] > 1:
+                    suffix = did[-6:] if len(did) >= 6 else did
+                    devices[did]["label"] = f"{base} ({suffix})"
+                
+            return devices
 
 
 class HiSenseAC:
@@ -298,6 +321,10 @@ class HiSenseAC:
             _LOGGER.error("Hisense request failed", exc_info=True)
             return False
 
+        if not isinstance(result, dict):
+            _LOGGER.error("Hisense response is not an object: %s", result)
+            return False
+
         response_obj = result.get("response")
         if not isinstance(response_obj, dict):
             _LOGGER.error("Hisense response missing response object: %s", result)
@@ -335,6 +362,8 @@ class HiSenseAC:
         return await self._send_command(url, command_data, status_required)
 
     def _extract_status_payload(self, result):
+        if not isinstance(result, dict):
+            raise ValueError("response is not an object")
         response = result.get("response")
         if not isinstance(response, dict):
             raise ValueError("missing response object")
@@ -546,6 +575,10 @@ class HiSenseFridge:
             _LOGGER.error("Hisense fridge request failed", exc_info=True)
             return False
 
+        if not isinstance(result, dict):
+            _LOGGER.error("Hisense fridge response is not an object: %s", result)
+            return False
+
         response_obj = result.get("response")
         if not isinstance(response_obj, dict):
             _LOGGER.error("Hisense fridge response missing response object: %s", result)
@@ -583,6 +616,8 @@ class HiSenseFridge:
         return await self._send_command(url, command_data, status_required)
 
     def _extract_status_payload(self, result):
+        if not isinstance(result, dict):
+            raise ValueError("response is not an object")
         response = result.get("response")
         if not isinstance(response, dict):
             raise ValueError("missing response object")
@@ -605,18 +640,23 @@ class HiSenseFridge:
         try:
             result_list_str = self._extract_status_payload(result)
             result_list = [int(i.strip()) for i in result_list_str.split(",")]
+            if len(result_list) < _MIN_FRIDGE_STATUS_VALUES:
+                raise ValueError(
+                    f"status payload has {len(result_list)} values, "
+                    f"expected at least {_MIN_FRIDGE_STATUS_VALUES}"
+                )
 
-            work_mode_id = result_list[3] if len(result_list) > 3 else 0
-            variation_mode_id = result_list[11] if len(result_list) > 11 else 0
+            work_mode_id = result_list[3]
+            variation_mode_id = result_list[11]
 
             status = {
-                "refrigerator_temperature": result_list[0] if len(result_list) > 0 else 5,
-                "freeze_temperature": result_list[1] if len(result_list) > 1 else -18,
-                "variation_temperature": result_list[11] if len(result_list) > 11 else 0,
+                "refrigerator_temperature": result_list[0],
+                "freeze_temperature": result_list[1],
+                "variation_temperature": result_list[11],
                 "work_mode_id": work_mode_id,
                 "work_mode": self.work_mode_lookup.get(work_mode_id, "NORMAL"),
-                "power_on": result_list[4] == 1 if len(result_list) > 4 else False,
-                "ambient_temperature": result_list[9] if len(result_list) > 9 else 25,
+                "power_on": result_list[4] == 1,
+                "ambient_temperature": result_list[9],
                 "variation_mode_id": variation_mode_id,
                 "variation_mode": self.variation_mode_lookup.get(variation_mode_id, "NORMAL"),
             }
