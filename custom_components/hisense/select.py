@@ -1,3 +1,5 @@
+import asyncio
+
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.exceptions import HomeAssistantError
 
@@ -60,6 +62,14 @@ class HisenseFridgeModeSelect(HisenseEntity, SelectEntity):
         return True
 
     @property
+    def options(self) -> list[str]:
+        if self.entity_description.key == "work_mode_select":
+            current_mode = self.status.get("work_mode")
+            if current_mode == "自定义" and current_mode not in WORK_MODE_OPTIONS:
+                return WORK_MODE_OPTIONS + ["自定义"]
+        return self.entity_description.options
+
+    @property
     def current_option(self) -> str | None:
         if self.entity_description.key == "work_mode_select":
             return self.status.get("work_mode")
@@ -71,8 +81,26 @@ class HisenseFridgeModeSelect(HisenseEntity, SelectEntity):
             if mode_id is None:
                 raise HomeAssistantError(f"无效的工作模式选项: {option}")
             await self.coordinator.client.set_fridge_mode(mode_id)
+            
+            self.coordinator.data["work_mode"] = option
+            self.coordinator.data["work_mode_id"] = mode_id
+            
+            if option == "智能模式":
+                self.coordinator.data["refrigerator_set_temperature"] = 5
+                self.coordinator.data["freeze_set_temperature"] = -18
+            elif option == "速冷":
+                self.coordinator.data["refrigerator_set_temperature"] = 2
+                self.coordinator.data["freeze_set_temperature"] = -16
         else:
             mode_id = VARIATION_MODE_MAP.get(option)
             if mode_id is None:
                 raise HomeAssistantError(f"无效的变温模式选项: {option}")
             await self.coordinator.client.set_variation_mode(mode_id)
+            
+            self.coordinator.data["variation_mode"] = option
+            self.coordinator.data["variation_mode_id"] = mode_id
+        
+        self.coordinator.async_set_updated_data(self.coordinator.data)
+        
+        await asyncio.sleep(5)
+        await self.coordinator.async_request_refresh()

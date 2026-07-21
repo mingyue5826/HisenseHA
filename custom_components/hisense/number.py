@@ -1,3 +1,5 @@
+import asyncio
+
 from homeassistant.components.number import NumberEntity, NumberEntityDescription, NumberMode
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import callback
@@ -133,18 +135,52 @@ class HisenseFridgeTemperatureNumber(HisenseEntity, NumberEntity):
 
     @property
     def native_value(self) -> float | None:
+        work_mode = self.status.get("work_mode", "自定义")
+        
         if self.entity_description.key == "refrigerator_temp_control":
+            if work_mode == "智能模式":
+                return 5.0
+            if work_mode == "速冷":
+                return 2.0
             return float(self.status.get("refrigerator_set_temperature", 5))
+        
+        if work_mode == "智能模式":
+            return -18.0
+        if work_mode == "速冷":
+            return -16.0
         return float(self.status.get("freeze_set_temperature", -18))
 
     async def async_set_native_value(self, value: float) -> None:
         v = round(value)
+        
         if self.entity_description.key == "refrigerator_temp_control":
             success = await self.client.set_refrigerator_temperature(v)
             label = "refrigerator"
+            self.coordinator.data["refrigerator_set_temperature"] = v
         else:
             success = await self.client.set_freeze_temperature(v)
             label = "freezer"
+            self.coordinator.data["freeze_set_temperature"] = v
         if not success:
             raise HomeAssistantError(f"Failed to set Hisense {label} temperature")
-        self.coordinator.async_update_from_client()
+        
+        work_mode = self.status.get("work_mode", "自定义")
+        if work_mode == "智能模式" or work_mode == "速冷":
+            self.coordinator.data["work_mode"] = "自定义"
+            self.coordinator.data["work_mode_id"] = 0
+            
+            if self.entity_description.key == "refrigerator_temp_control":
+                if work_mode == "智能模式":
+                    self.coordinator.data["freeze_set_temperature"] = -18
+                else:
+                    self.coordinator.data["freeze_set_temperature"] = -16
+            else:
+                if work_mode == "智能模式":
+                    self.coordinator.data["refrigerator_set_temperature"] = 5
+                else:
+                    self.coordinator.data["refrigerator_set_temperature"] = 2
+        
+        self.coordinator.async_set_updated_data(self.coordinator.data)
+        
+        await asyncio.sleep(5)
+        await self.coordinator.async_request_refresh()
