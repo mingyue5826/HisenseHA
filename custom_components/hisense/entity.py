@@ -64,4 +64,6 @@ class HisenseEntity(CoordinatorEntity[HisenseDataUpdateCoordinator]):
             "name": name,
             "translation_key": translation_key,
             "manufacturer": "Hisense",
+            "model": device_name,
+            "serial_number": self.client.device_id,
         }

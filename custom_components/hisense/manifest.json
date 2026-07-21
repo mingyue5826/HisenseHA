@@ -1,6 +1,6 @@
 {
   "domain": "hisense",
-  "name": "Hisense Smart Devices New",
+  "name": "Hisense Smart Devices",
   "config_flow": true,
   "version": "1.6.0",
   "integration_type": "device",
