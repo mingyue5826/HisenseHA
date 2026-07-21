@@ -553,7 +553,7 @@ class HiSenseFridge:
         }
         self.work_mode_lookup = {
             0: "自定义",
-            64: "智能模式",
+            64: "智能",
             65: "速冷",
         }
         self.variation_mode_lookup = {

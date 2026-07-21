@@ -138,13 +138,13 @@ class HisenseFridgeTemperatureNumber(HisenseEntity, NumberEntity):
         work_mode = self.status.get("work_mode", "自定义")
         
         if self.entity_description.key == "refrigerator_temp_control":
-            if work_mode == "智能模式":
+            if work_mode == "智能":
                 return 5.0
             if work_mode == "速冷":
                 return 2.0
             return float(self.status.get("refrigerator_set_temperature", 5))
         
-        if work_mode == "智能模式":
+        if work_mode == "智能":
             return -18.0
         if work_mode == "速冷":
             return -16.0
@@ -165,17 +165,17 @@ class HisenseFridgeTemperatureNumber(HisenseEntity, NumberEntity):
             raise HomeAssistantError(f"Failed to set Hisense {label} temperature")
         
         work_mode = self.status.get("work_mode", "自定义")
-        if work_mode == "智能模式" or work_mode == "速冷":
+        if work_mode == "智能" or work_mode == "速冷":
             self.coordinator.data["work_mode"] = "自定义"
             self.coordinator.data["work_mode_id"] = 0
             
             if self.entity_description.key == "refrigerator_temp_control":
-                if work_mode == "智能模式":
+                if work_mode == "智能":
                     self.coordinator.data["freeze_set_temperature"] = -18
                 else:
                     self.coordinator.data["freeze_set_temperature"] = -16
             else:
-                if work_mode == "智能模式":
+                if work_mode == "智能":
                     self.coordinator.data["refrigerator_set_temperature"] = 5
                 else:
                     self.coordinator.data["refrigerator_set_temperature"] = 2

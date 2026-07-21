@@ -6,11 +6,11 @@ from homeassistant.exceptions import HomeAssistantError
 from .const import DOMAIN
 from .entity import HisenseEntity
 
-WORK_MODE_OPTIONS = ["智能模式", "速冷"]
+WORK_MODE_OPTIONS = ["智能", "速冷"]
 VARIATION_MODE_OPTIONS = ["母婴", "0℃养鲜", "原鲜"]
 
 WORK_MODE_MAP = {
-    "智能模式": 64,
+    "智能": 64,
     "速冷": 65,
 }
 
@@ -85,7 +85,7 @@ class HisenseFridgeModeSelect(HisenseEntity, SelectEntity):
             self.coordinator.data["work_mode"] = option
             self.coordinator.data["work_mode_id"] = mode_id
             
-            if option == "智能模式":
+            if option == "智能":
                 self.coordinator.data["refrigerator_set_temperature"] = 5
                 self.coordinator.data["freeze_set_temperature"] = -18
             elif option == "速冷":
