@@ -34,17 +34,17 @@ CLIMATE_LIMIT_DESCRIPTIONS: tuple[NumberEntityDescription, ...] = (
 
 FRIDGE_TEMP_DESCRIPTIONS: tuple[NumberEntityDescription, ...] = (
     NumberEntityDescription(
-        key="refrigerator_temp",
+        key="refrigerator_temp_control",
         translation_key="refrigerator_temp_control",
-        native_min_value=1,
-        native_max_value=10,
+        native_min_value=2,
+        native_max_value=8,
         native_step=1,
         mode=NumberMode.SLIDER,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         icon="mdi:thermometer",
     ),
     NumberEntityDescription(
-        key="freeze_temp",
+        key="freeze_temp_control",
         translation_key="freeze_temp_control",
         native_min_value=-25,
         native_max_value=-15,
@@ -133,13 +133,13 @@ class HisenseFridgeTemperatureNumber(HisenseEntity, NumberEntity):
 
     @property
     def native_value(self) -> float | None:
-        if self.entity_description.key == "refrigerator_temp":
-            return float(self.status.get("refrigerator_temperature", 5))
-        return float(self.status.get("freeze_temperature", -18))
+        if self.entity_description.key == "refrigerator_temp_control":
+            return float(self.status.get("refrigerator_set_temperature", 5))
+        return float(self.status.get("freeze_set_temperature", -18))
 
     async def async_set_native_value(self, value: float) -> None:
         v = round(value)
-        if self.entity_description.key == "refrigerator_temp":
+        if self.entity_description.key == "refrigerator_temp_control":
             success = await self.client.set_refrigerator_temperature(v)
             label = "refrigerator"
         else:
