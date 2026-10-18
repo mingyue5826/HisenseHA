@@ -1,0 +1,469 @@
+{
+  "header": {
+    "messageId": "e991bb72-ca81-11f1-9cda-df375bd4562a",
+    "timestamp": 1792279474377
+  },
+  "payload": {
+    "status": "SUCCESS",
+    "products": [
+      {
+        "categoryCode": "connector.device.type.fridge",
+        "productCode": "LB051600602J",
+        "functions": [
+          {
+            "code": "connector.device.function.FoodMaterialControl",
+            "name": "食材管理",
+            "desc": "",
+            "attributes": [],
+            "states": []
+          },
+          {
+            "code": "connector.device.function.Modes.Smart",
+            "name": "智能模式",
+            "desc": "",
+            "action": {
+              "command": "connector.device.command.SetModes.Smart",
+              "params": [
+                {
+                  "attribute": "smartModeSwitch",
+                  "optional": "1"
+                }
+              ]
+            },
+            "attributes": [
+              {
+                "code": "smartModeSwitch",
+                "type": "3",
+                "suffix": "",
+                "step": "",
+                "defaultValue": "0",
+                "value": [
+                  {
+                    "value": "0",
+                    "code": "Off",
+                    "name": "关闭",
+                    "stateName": "已关闭",
+                    "commandName": "关闭",
+                    "seq": 1,
+                    "materialCode": "Off_material"
+                  },
+                  {
+                    "value": "1",
+                    "code": "On",
+                    "name": "开启",
+                    "stateName": "已打开",
+                    "commandName": "打开",
+                    "seq": 1,
+                    "materialCode": "On_material"
+                  }
+                ]
+              }
+            ],
+            "states": [
+              {
+                "code": "workMode.Smart",
+                "attribute": "smartModeSwitch"
+              }
+            ]
+          },
+          {
+            "code": "connector.device.function.TemperatureControl.Freeze",
+            "name": "冷冻室温度控制",
+            "desc": "",
+            "action": {
+              "command": "connector.device.command.SetTemperature.Freeze",
+              "params": [
+                {
+                  "attribute": "freezeSetTemperature",
+                  "optional": "1"
+                }
+              ]
+            },
+            "attributes": [
+              {
+                "code": "freezeControlledTemperature",
+                "type": "1",
+                "suffix": "℃",
+                "step": "",
+                "defaultValue": "-20",
+                "value": "[-40,-10]"
+              },
+              {
+                "code": "freezeRelativeTemperature",
+                "type": "1",
+                "suffix": "℃",
+                "step": "",
+                "defaultValue": "1",
+                "value": "[1,10]"
+              },
+              {
+                "code": "freezeSetTemperature",
+                "type": "1",
+                "suffix": "℃",
+                "step": "",
+                "defaultValue": "-20",
+                "value": "[-25,-15]"
+              }
+            ],
+            "states": [
+              {
+                "code": "displayTemperature.freeze",
+                "attribute": "freezeControlledTemperature"
+              },
+              {
+                "code": "setTemperature.freeze",
+                "attribute": "freezeSetTemperature"
+              }
+            ]
+          },
+          {
+            "code": "connector.device.function.RefrigeratorTemperatureControl",
+            "name": "冷藏室温度控制",
+            "desc": "",
+            "action": {
+              "command": "connector.device.command.SetRefrigeratorTemperature",
+              "params": [
+                {
+                  "attribute": "refrigeratorSetTemperature",
+                  "optional": "1"
+                }
+              ]
+            },
+            "attributes": [
+              {
+                "code": "refrigeratorRelativeTemperature",
+                "type": "1",
+                "suffix": "℃",
+                "step": "",
+                "defaultValue": "1",
+                "value": "[1,6]"
+              },
+              {
+                "code": "refrigeratorSetTemperature",
+                "type": "1",
+                "suffix": "℃",
+                "step": "",
+                "defaultValue": "2",
+                "value": "[2,8]"
+              }
+            ],
+            "states": [
+              {
+                "code": "refrigeratorSetTemperature",
+                "attribute": "refrigeratorSetTemperature"
+              }
+            ]
+          },
+          {
+            "code": "connector.device.function.Modes.QuickCooling",
+            "name": "速冷模式",
+            "desc": "",
+            "action": {
+              "command": "connector.device.command.SetModes.QuickCooling",
+              "params": [
+                {
+                  "attribute": "quickCoolingModeSwitch",
+                  "optional": "1"
+                }
+              ]
+            },
+            "attributes": [
+              {
+                "code": "quickCoolingModeSwitch",
+                "type": "3",
+                "suffix": "",
+                "step": "",
+                "defaultValue": "0",
+                "value": [
+                  {
+                    "value": "0",
+                    "code": "Off",
+                    "name": "关闭",
+                    "stateName": "已关闭",
+                    "commandName": "关闭",
+                    "seq": 1,
+                    "materialCode": "Off_material"
+                  },
+                  {
+                    "value": "1",
+                    "code": "On",
+                    "name": "开启",
+                    "stateName": "已打开",
+                    "commandName": "打开",
+                    "seq": 1,
+                    "materialCode": "On_material"
+                  }
+                ]
+              }
+            ],
+            "states": [
+              {
+                "code": "workMode.QuickCooling",
+                "attribute": "quickCoolingModeSwitch"
+              }
+            ]
+          },
+          {
+            "code": "connector.device.function.TemperatureControl.Refrigerator",
+            "name": "冷藏室温度控制",
+            "desc": "",
+            "action": {
+              "command": "connector.device.command.SetTemperature.Refrigerator",
+              "params": [
+                {
+                  "attribute": "refrigeratorSetTemperature",
+                  "optional": "1"
+                }
+              ]
+            },
+            "attributes": [
+              {
+                "code": "refrigeratorControlledTemperature",
+                "type": "1",
+                "suffix": "℃",
+                "step": "",
+                "defaultValue": "2",
+                "value": "[0,15]"
+              },
+              {
+                "code": "refrigeratorRelativeTemperature",
+                "type": "1",
+                "suffix": "℃",
+                "step": "",
+                "defaultValue": "1",
+                "value": "[1,6]"
+              },
+              {
+                "code": "refrigeratorSetTemperature",
+                "type": "1",
+                "suffix": "℃",
+                "step": "",
+                "defaultValue": "2",
+                "value": "[2,8]"
+              }
+            ],
+            "states": [
+              {
+                "code": "displayTemperature.refrigerator",
+                "attribute": "refrigeratorControlledTemperature"
+              },
+              {
+                "code": "setTemperature.refrigerator",
+                "attribute": "refrigeratorSetTemperature"
+              }
+            ]
+          },
+          {
+            "code": "connector.device.function.Modes",
+            "name": "模式",
+            "desc": "",
+            "action": {
+              "command": "connector.device.command.SetModes",
+              "params": [
+                {
+                  "attribute": "modes",
+                  "optional": "0"
+                }
+              ]
+            },
+            "attributes": [
+              {
+                "code": "modes",
+                "type": "4",
+                "suffix": "",
+                "step": "",
+                "defaultValue": "0",
+                "value": [
+                  {
+                    "value": "0",
+                    "code": "Smart",
+                    "name": "智能",
+                    "stateName": "智能",
+                    "commandName": "智能",
+                    "seq": 1,
+                    "materialCode": "Smart_material"
+                  },
+                  {
+                    "value": "3",
+                    "code": "QuickCooling",
+                    "name": "速冷",
+                    "stateName": "速冷",
+                    "commandName": "速冷",
+                    "seq": 1,
+                    "materialCode": "QuickCooling_material"
+                  }
+                ]
+              }
+            ],
+            "states": [
+              {
+                "code": "workMode",
+                "attribute": "modes"
+              }
+            ]
+          },
+          {
+            "code": "connector.device.function.FreezeTemperatureControl",
+            "name": "冷冻室温度控制",
+            "desc": "",
+            "action": {
+              "command": "connector.device.command.SetFreezeTemperature",
+              "params": [
+                {
+                  "attribute": "freezeSetTemperature",
+                  "optional": "1"
+                }
+              ]
+            },
+            "attributes": [
+              {
+                "code": "freezeRelativeTemperature",
+                "type": "1",
+                "suffix": "℃",
+                "step": "",
+                "defaultValue": "1",
+                "value": "[1,10]"
+              },
+              {
+                "code": "freezeSetTemperature",
+                "type": "1",
+                "suffix": "℃",
+                "step": "",
+                "defaultValue": "-20",
+                "value": "[-25,-15]"
+              }
+            ],
+            "states": [
+              {
+                "code": "freezeSetTemperature",
+                "attribute": "freezeSetTemperature"
+              }
+            ]
+          },
+          {
+            "code": "connector.device.function.Online",
+            "name": "在线状态",
+            "desc": "",
+            "attributes": [
+              {
+                "code": "onlineAndOffline",
+                "type": "3",
+                "suffix": "",
+                "step": "",
+                "defaultValue": "0",
+                "value": [
+                  {
+                    "value": "0",
+                    "code": "Offline",
+                    "name": "离线",
+                    "stateName": "离线",
+                    "commandName": "离线",
+                    "seq": 1,
+                    "materialCode": "Offline_material"
+                  },
+                  {
+                    "value": "1",
+                    "code": "Online",
+                    "name": "在线",
+                    "stateName": "在线",
+                    "commandName": "在线",
+                    "seq": 1,
+                    "materialCode": "Online_material"
+                  }
+                ]
+              }
+            ],
+            "states": [
+              {
+                "code": "onlineStatus",
+                "attribute": "onlineAndOffline"
+              }
+            ]
+          }
+        ],
+        "preferFunctions": [
+          {
+            "priority": 0,
+            "conditions": {
+              "onlineStatus": "0"
+            },
+            "functions": [
+              {
+                "functionCode": "connector.device.function.Online",
+                "index": 1,
+                "displayType": 2,
+                "displayState": "onlineStatus",
+                "textTemplate": ""
+              }
+            ]
+          },
+          {
+            "priority": 1,
+            "conditions": {
+              "onlineStatus": "1"
+            },
+            "functions": [
+              {
+                "functionCode": "connector.device.function.FreezeTemperatureControl",
+                "index": 2,
+                "displayType": 2,
+                "displayState": "freezeSetTemperature",
+                "textTemplate": ""
+              },
+              {
+                "functionCode": "connector.device.function.TemperatureControl.Refrigerator",
+                "index": 19,
+                "displayType": 2,
+                "displayState": "displayTemperature.refrigerator",
+                "textTemplate": ""
+              },
+              {
+                "functionCode": "connector.device.function.Modes.Smart",
+                "index": 4,
+                "displayType": 1,
+                "displayState": "",
+                "textTemplate": ""
+              },
+              {
+                "functionCode": "connector.device.function.Modes",
+                "index": 3,
+                "displayType": 1,
+                "displayState": "",
+                "textTemplate": ""
+              },
+              {
+                "functionCode": "connector.device.function.FoodMaterialControl",
+                "index": 22,
+                "displayType": 1,
+                "displayState": "",
+                "textTemplate": ""
+              },
+              {
+                "functionCode": "connector.device.function.TemperatureControl.Freeze",
+                "index": 18,
+                "displayType": 2,
+                "displayState": "displayTemperature.freeze",
+                "textTemplate": ""
+              },
+              {
+                "functionCode": "connector.device.function.RefrigeratorTemperatureControl",
+                "index": 1,
+                "displayType": 2,
+                "displayState": "refrigeratorSetTemperature",
+                "textTemplate": ""
+              },
+              {
+                "functionCode": "connector.device.function.Modes.QuickCooling",
+                "index": 7,
+                "displayType": 1,
+                "displayState": "",
+                "textTemplate": ""
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "signatureServer": "TJtvpUJBMoJ23/25nIeih33esjVXiZJJRHtKTDWe5HIW5MTBImH76WEeDpAE2hdqE5bXoU/+/1AHV35zS24GQQ=="
+}

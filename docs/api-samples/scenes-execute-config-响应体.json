@@ -1,0 +1,274 @@
+{
+  "_note": "真实响应。actionDevices[].states 与 /devices/detail 的 payload.device.states 完全一致（74 键），此处省略，完整内容见 detail-响应体.json。",
+  "header": {
+    "messageId": "97165090-ca81-11f1-9cda-df375bd4562a",
+    "timestamp": 1792279336082
+  },
+  "payload": {
+    "status": "SUCCESS",
+    "result": {
+      "conditionDevices": [],
+      "actionDevices": [
+        {
+          "deviceId": "86100c0090020020000000403a9c5d10:lb051600602j0093fe7d2a1",
+          "partnerId": "1001",
+          "nickName": "冰箱",
+          "room": {
+            "id": "10000003",
+            "name": "厨房"
+          },
+          "categoryCode": "connector.device.type.fridge",
+          "states": {},
+          "product": {
+            "code": "LB051600602J",
+            "smallIcon": "https://img-download-iot.hismarttv.com/epgdata/hiaiot/1710835702520_vCzq4V7y.png",
+            "largeIcon": "https://img-download-iot.hismarttv.com/epgdata/hiaiot/1710835706351_SRdQnQHI.png"
+          },
+          "commands": [
+            {
+              "code": "connector.device.command.SetTemperature.Refrigerator",
+              "name": "设置冷藏室温度",
+              "attributeCodeGroup": "",
+              "attributes": [
+                {
+                  "code": "refrigeratorSetTemperature",
+                  "state": "setTemperature.refrigerator",
+                  "name": "冷藏室温度",
+                  "type": "1",
+                  "step": "",
+                  "suffix": "℃",
+                  "style": "2",
+                  "value": "[2,8]",
+                  "defaultValue": "",
+                  "displayTemplate": "${name}${value}${suffix}"
+                }
+              ]
+            },
+            {
+              "code": "connector.device.command.SetTemperature.Freeze",
+              "name": "设置冷冻室温度",
+              "attributeCodeGroup": "",
+              "attributes": [
+                {
+                  "code": "freezeSetTemperature",
+                  "state": "setTemperature.freeze",
+                  "name": "冷冻室温度",
+                  "type": "1",
+                  "step": "",
+                  "suffix": "℃",
+                  "style": "2",
+                  "value": "[-25,-15]",
+                  "defaultValue": "",
+                  "displayTemplate": "${name}${value}${suffix}"
+                }
+              ]
+            },
+            {
+              "code": "connector.device.command.SetModes",
+              "name": "设置模式",
+              "attributeCodeGroup": "",
+              "attributes": [
+                {
+                  "code": "modes",
+                  "state": "workMode",
+                  "name": "模式",
+                  "type": "4",
+                  "step": "",
+                  "suffix": "",
+                  "style": "2",
+                  "value": [
+                    {
+                      "value": "0",
+                      "code": "Smart",
+                      "name": "智能"
+                    },
+                    {
+                      "value": "3",
+                      "code": "QuickCooling",
+                      "name": "速冷"
+                    }
+                  ],
+                  "defaultValue": "",
+                  "displayTemplate": "${value.name}${name}"
+                }
+              ]
+            }
+          ],
+          "conflictCommands": [
+            {
+              "srcCommand": {
+                "code": "connector.device.command.SetFreezerGear",
+                "attributes": [
+                  {
+                    "code": "freezerGear",
+                    "allExclusive": "1",
+                    "values": [""]
+                  }
+                ]
+              },
+              "allExclusive": "0",
+              "targetCommands": [
+                {
+                  "code": "connector.device.command.SetModes",
+                  "attributes": [
+                    {
+                      "code": "smartFridgeModes",
+                      "allExclusive": "0",
+                      "values": ["0", "2", "6", "7", "8", "9"]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "srcCommand": {
+                "code": "connector.device.command.SetTemperature.Refrigerator",
+                "attributes": [
+                  {
+                    "code": "refrigeratorSetTemperature",
+                    "allExclusive": "1",
+                    "values": [""]
+                  }
+                ]
+              },
+              "allExclusive": "0",
+              "targetCommands": [
+                {
+                  "code": "connector.device.command.SetModes",
+                  "attributes": [
+                    {
+                      "code": "smartFridgeModes",
+                      "allExclusive": "0",
+                      "values": ["0", "3", "4"]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "srcCommand": {
+                "code": "connector.device.command.SetModes",
+                "attributes": [
+                  {
+                    "code": "modes",
+                    "allExclusive": "0",
+                    "values": ["0", "2", "6", "7", "8", "9"]
+                  }
+                ]
+              },
+              "allExclusive": "0",
+              "targetCommands": [
+                {
+                  "code": "connector.device.command.SetFreezerGear",
+                  "attributes": [
+                    {
+                      "code": "freezerGear",
+                      "allExclusive": "1",
+                      "values": []
+                    }
+                  ]
+                },
+                {
+                  "code": "connector.device.command.SetTemperature.Freeze",
+                  "attributes": [
+                    {
+                      "code": "freezeSetTemperature",
+                      "allExclusive": "1",
+                      "values": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "srcCommand": {
+                "code": "connector.device.command.SetTemperature.Freeze",
+                "attributes": [
+                  {
+                    "code": "freezeSetTemperature",
+                    "allExclusive": "1",
+                    "values": [""]
+                  }
+                ]
+              },
+              "allExclusive": "0",
+              "targetCommands": [
+                {
+                  "code": "connector.device.command.SetModes",
+                  "attributes": [
+                    {
+                      "code": "smartFridgeModes",
+                      "allExclusive": "0",
+                      "values": ["0", "2", "6", "7", "8", "9"]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "srcCommand": {
+                "code": "connector.device.command.SetRefrigeratorGear",
+                "attributes": [
+                  {
+                    "code": "refrigeratorGear",
+                    "allExclusive": "1",
+                    "values": [""]
+                  }
+                ]
+              },
+              "allExclusive": "0",
+              "targetCommands": [
+                {
+                  "code": "connector.device.command.SetModes",
+                  "attributes": [
+                    {
+                      "code": "smartFridgeModes",
+                      "allExclusive": "0",
+                      "values": ["0", "3", "4"]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "srcCommand": {
+                "code": "connector.device.command.SetModes",
+                "attributes": [
+                  {
+                    "code": "modes",
+                    "allExclusive": "0",
+                    "values": ["0", "3", "4"]
+                  }
+                ]
+              },
+              "allExclusive": "0",
+              "targetCommands": [
+                {
+                  "code": "connector.device.command.SetTemperature.Refrigerator",
+                  "attributes": [
+                    {
+                      "code": "refrigeratorSetTemperature",
+                      "allExclusive": "1",
+                      "values": []
+                    }
+                  ]
+                },
+                {
+                  "code": "connector.device.command.SetRefrigeratorGear",
+                  "attributes": [
+                    {
+                      "code": "refrigeratorGear",
+                      "allExclusive": "1",
+                      "values": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "signatureServer": "WzIKnpipLKq0V0z99N6ZMj7ZsnIxhFeYM+7Wj10lJ4Do+7WNvrJMHAGviR22JJ/opbzGZLdPC0+DohcXM1eRig=="
+}
